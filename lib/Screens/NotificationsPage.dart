@@ -31,13 +31,13 @@ class _NotificationsState extends State<Notifications> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Padding(
+        title: const Padding(
             padding: EdgeInsets.only(left: 16),
             child: Text('การแจ้งเตือน',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold))),
         backgroundColor: Colors.green,
-        actions: [
+        actions: const [
           Padding(
               padding: EdgeInsets.only(right: 16),
               child: Icon(Icons.notifications, color: Colors.white)),
@@ -71,7 +71,7 @@ class _NotificationsState extends State<Notifications> {
                 ),
                 title: Text(
                   notification['title']!,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),

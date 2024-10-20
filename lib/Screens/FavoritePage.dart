@@ -28,20 +28,20 @@ class _FavoriteState extends State<Favorite> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Padding(
+        title: const Padding(
             padding: EdgeInsets.only(left: 16),
             child: Text('รายการโปรด',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold))),
         backgroundColor: Colors.green,
-        actions: [
+        actions: const [
           Padding(
               padding: EdgeInsets.only(right: 16),
               child: Icon(Icons.favorite, color: Colors.white)),
         ],
       ),
       body: favoriteItems.isEmpty
-          ? Center(child: Text('ไม่มีรายการโปรด'))
+          ? const Center(child: Text('ไม่มีรายการโปรด'))
           : ListView.builder(
               itemCount: favoriteItems.length,
               itemBuilder: (context, index) {
@@ -72,7 +72,7 @@ class _FavoriteState extends State<Favorite> {
                       title: Text(item['name']!),
                       subtitle: Text(item['details']!),
                       trailing: IconButton(
-                        icon: Icon(Icons.favorite),
+                        icon: const Icon(Icons.favorite),
                         color: Colors.red,
                         onPressed: () {
                           setState(() {

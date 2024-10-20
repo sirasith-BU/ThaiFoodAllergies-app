@@ -19,9 +19,9 @@ class _FallergiesState extends State<Fallergies> {
           TextButton(
             onPressed: () {
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => (MainPage())));
+                  MaterialPageRoute(builder: (context) => (const MainPage())));
             },
-            child: Text(
+            child: const Text(
               'Skip',
               style: TextStyle(color: Colors.white, fontSize: 20),
             ),
@@ -34,7 +34,7 @@ class _FallergiesState extends State<Fallergies> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 "กรุณากรอกอาหารที่แพ้",
                 style: TextStyle(
                     color: Colors.white,
@@ -42,27 +42,27 @@ class _FallergiesState extends State<Fallergies> {
                     fontSize: 37),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "กรุณากรอกอาหารที่แพ้ เช่น นม",
                   labelStyle: TextStyle(color: Colors.white),
                 ),
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {},
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.all(Colors.lightGreen),
+                  minimumSize: WidgetStateProperty.all(const Size(150, 50)),
+                ),
                 child: Text(
                   "บันทึก",
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 20),
-                ),
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(Colors.lightGreen),
-                  minimumSize: WidgetStateProperty.all(Size(150, 50)),
                 ),
               ),
             ],

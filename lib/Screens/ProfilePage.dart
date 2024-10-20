@@ -17,10 +17,10 @@ class _ProfileState extends State<Profile> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () {
               Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => Login()));
+                  context, MaterialPageRoute(builder: (context) => const Login()));
             },
           ),
         ],
@@ -29,7 +29,7 @@ class _ProfileState extends State<Profile> {
         children: [
           Container(
             height: 200,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(
                     "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw="), // ใช้รูปปกหลัง
@@ -40,7 +40,7 @@ class _ProfileState extends State<Profile> {
           Positioned(
             top: 150,
             left: MediaQuery.of(context).size.width / 2 - 50,
-            child: CircleAvatar(
+            child: const CircleAvatar(
               radius: 50,
               backgroundImage: AssetImage("images/logo.png"),
             ),
@@ -49,52 +49,52 @@ class _ProfileState extends State<Profile> {
             padding: const EdgeInsets.only(top: 230.0, left: 16.0, right: 16.0),
             child: Column(
               children: [
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                const Text(
                   'Thai Food Allergies',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton(
                       onPressed: () {},
-                      child: Text('แก้ไขโปรไฟล์'),
                       style: ButtonStyle(
-                        minimumSize: WidgetStateProperty.all(Size(100, 50)),
+                        minimumSize: WidgetStateProperty.all(const Size(100, 50)),
                       ),
+                      child: Text('แก้ไขโปรไฟล์'),
                     ),
                     ElevatedButton(
                       onPressed: () {},
-                      child: Text('แก้ไขรายการอาหารที่แพ้'),
                       style: ButtonStyle(
-                        minimumSize: WidgetStateProperty.all(Size(100, 50)),
+                        minimumSize: WidgetStateProperty.all(const Size(100, 50)),
                       ),
+                      child: Text('แก้ไขรายการอาหารที่แพ้'),
                     ),
                   ],
                 ),
-                SizedBox(height: 50),
-                Text(
+                const SizedBox(height: 50),
+                const Text(
                   'คำอธิบาย',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Text(
+                const Text(
                   'ผมเป็นสายกิน หลงใหลในรสชาติอาหาร ชอบชิมอาหารไม่ว่าจะเป็น อาหารไทย อาหารต่างชาติ อาหารคาว อาหารหวาน ของกินเล่น ของกินจุกจิก ผมลองมาหมดแล้ว จะรีวิวแบบไม่กั๊ก บอกต่อแบบตรงไปตรงมา',
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                const Text(
                   'สิ่งที่ชอบรับประทาน',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Text('ผัดกะเพรา, ต้มจืด'),
-                SizedBox(height: 20),
-                Text(
+                const Text('ผัดกะเพรา, ต้มจืด'),
+                const SizedBox(height: 20),
+                const Text(
                   'รายการอาหารที่แพ้',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Text('นม, ไข่, กุ้ง, หมึก'),
+                const Text('นม, ไข่, กุ้ง, หมึก'),
               ],
             ),
           ),

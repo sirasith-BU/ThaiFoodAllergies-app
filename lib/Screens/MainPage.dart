@@ -16,11 +16,11 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    Home(),
-    Search(),
-    Notifications(),
-    Favorite(),
-    Profile(),
+    const Home(),
+    const Search(),
+    const Notifications(),
+    const Favorite(),
+    const Profile(),
   ];
 
   void _onItemTapped(int index) {

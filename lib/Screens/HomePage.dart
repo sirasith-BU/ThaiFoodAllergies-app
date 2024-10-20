@@ -20,7 +20,7 @@ class _HomeState extends State<Home> {
               padding:
                   const EdgeInsets.only(top: 60, left: 20), // เพิ่ม padding
               height: 150,
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
@@ -50,9 +50,9 @@ class _HomeState extends State<Home> {
                 ],
               ),
             ),
-            SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 'ยอดนิยม',
                 style: TextStyle(
@@ -61,8 +61,8 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
-            Container(
+            const SizedBox(height: 10),
+            SizedBox(
               height: 150,
               child: ListView(
                 scrollDirection: Axis.horizontal,
@@ -73,9 +73,9 @@ class _HomeState extends State<Home> {
                 ],
               ),
             ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 'เมนูที่คุณอาจจะชอบ',
                 style: TextStyle(
@@ -84,8 +84,8 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
-            Container(
+            const SizedBox(height: 10),
+            SizedBox(
               height: 150,
               child: ListView(
                 scrollDirection: Axis.horizontal,

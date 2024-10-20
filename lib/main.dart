@@ -8,13 +8,13 @@ import 'Screens/RegisterPage.dart';
 import 'Screens/Changepass.dart';
 
 void main() {
-  var login = Login();
-  var regis = Register();
-  var changepass = Changepass();
-  var fallergies = Fallergies();
-  var main = MainPage();
-  var profile = Profile();
-  var search = Search();
+  var login = const Login();
+  var regis = const Register();
+  var changepass = const Changepass();
+  var fallergies = const Fallergies();
+  var main = const MainPage();
+  var profile = const Profile();
+  var search = const Search();
 
   runApp(MaterialApp(home: login));
 }

@@ -24,13 +24,13 @@ class _SearchState extends State<Search> {
             TextField(
               decoration: InputDecoration(
                 labelText: 'กินอะไรดี..',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -44,7 +44,7 @@ class _SearchState extends State<Search> {
                     backgroundColor: selectedFilter == 'ทั้งหมด'
                         ? Colors.green
                         : Colors.grey,
-                    minimumSize: Size(120, 50),
+                    minimumSize: const Size(120, 50),
                   ),
                   child: Text(
                     'ทั้งหมด',
@@ -65,7 +65,7 @@ class _SearchState extends State<Search> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         selectedFilter == 'ของคาว' ? Colors.green : Colors.grey,
-                    minimumSize: Size(120, 50),
+                    minimumSize: const Size(120, 50),
                   ),
                   child: Text('ของคาว',
                       style: TextStyle(
@@ -85,7 +85,7 @@ class _SearchState extends State<Search> {
                     backgroundColor: selectedFilter == 'ของหวาน'
                         ? Colors.green
                         : Colors.grey,
-                    minimumSize: Size(120, 50),
+                    minimumSize: const Size(120, 50),
                   ),
                   child: Text('ของหวาน',
                       style: TextStyle(
@@ -97,12 +97,12 @@ class _SearchState extends State<Search> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Expanded(
               child: Center(
                 child: Text(
-                  '${selectedFilter}',
-                  style: TextStyle(fontSize: 16),
+                  selectedFilter,
+                  style: const TextStyle(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
               ),
