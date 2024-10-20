@@ -79,7 +79,7 @@ class _RegisterState extends State<Register> {
                       minimumSize: WidgetStateProperty.all(const Size(350, 50)),
                       backgroundColor: WidgetStateProperty.all(Colors.green),
                     ),
-                    child: Text(
+                    child: const Text(
                       "สร้างบัญชี",
                       style: TextStyle(
                           fontSize: 18,

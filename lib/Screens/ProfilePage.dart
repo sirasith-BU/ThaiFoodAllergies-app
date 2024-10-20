@@ -63,14 +63,14 @@ class _ProfileState extends State<Profile> {
                       style: ButtonStyle(
                         minimumSize: WidgetStateProperty.all(const Size(100, 50)),
                       ),
-                      child: Text('แก้ไขโปรไฟล์'),
+                      child: const Text('แก้ไขโปรไฟล์'),
                     ),
                     ElevatedButton(
                       onPressed: () {},
                       style: ButtonStyle(
                         minimumSize: WidgetStateProperty.all(const Size(100, 50)),
                       ),
-                      child: Text('แก้ไขรายการอาหารที่แพ้'),
+                      child: const Text('แก้ไขรายการอาหารที่แพ้'),
                     ),
                   ],
                 ),

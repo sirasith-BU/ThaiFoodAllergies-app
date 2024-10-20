@@ -57,7 +57,7 @@ class _FallergiesState extends State<Fallergies> {
                   backgroundColor: WidgetStateProperty.all(Colors.lightGreen),
                   minimumSize: WidgetStateProperty.all(const Size(150, 50)),
                 ),
-                child: Text(
+                child: const Text(
                   "บันทึก",
                   style: TextStyle(
                       color: Colors.white,

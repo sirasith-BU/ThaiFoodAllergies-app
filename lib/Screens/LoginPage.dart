@@ -67,7 +67,7 @@ class _LoginState extends State<Login> {
                       padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
                           horizontal: 24.0, vertical: 16.0)),
                     ),
-                    child: Text(
+                    child: const Text(
                       "เข้าสู่ระบบ",
                       style: TextStyle(
                         color: Colors.white,

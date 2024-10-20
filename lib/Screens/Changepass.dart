@@ -76,7 +76,7 @@ class _ChangepassState extends State<Changepass> {
                       minimumSize: WidgetStateProperty.all(const Size(350, 50)),
                       backgroundColor: WidgetStateProperty.all(Colors.green),
                     ),
-                    child: Text(
+                    child: const Text(
                       "เปลี่ยนรหัสผ่าน",
                       style: TextStyle(
                           fontSize: 18,
