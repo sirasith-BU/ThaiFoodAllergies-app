@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "626999850015",
+    "project_id": "thaifoodforallergies",
+    "storage_bucket": "thaifoodforallergies.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626999850015:android:9923b023b15ae1ba51d12a",
+        "android_client_info": {
+          "package_name": "com.example.flutter_firebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpXFA9BhcYx6G3ehzA-LBINq6Y6EJLBV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626999850015:android:d223e42dccdf7b7151d12a",
+        "android_client_info": {
+          "package_name": "com.example.foodallergies_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpXFA9BhcYx6G3ehzA-LBINq6Y6EJLBV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

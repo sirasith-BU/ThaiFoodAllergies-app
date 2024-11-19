@@ -1,17 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:foodallergies_app/AdminScreens/Ad_RecipesDetailPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'RecipesDetailPage.dart';
-
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+class AdminSearchPage extends StatefulWidget {
+  const AdminSearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  State<AdminSearchPage> createState() => _AdminSearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _AdminSearchPageState extends State<AdminSearchPage> {
   String selectedFilter = 'ทั้งหมด';
   String searchQuery = '';
   List<Map<String, dynamic>> searchResults = [];
@@ -68,7 +67,7 @@ class _SearchPageState extends State<SearchPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RecipesDetailPage(
+              builder: (context) => AdminRecipesDetailPage(
                 recipesId: recipeId,
                 name: name,
                 imageUrl:
@@ -133,15 +132,18 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(
-          'ค้นหาเมนูอาหาร',
-          style: GoogleFonts.itim(fontSize: 26),
-        ),
-      ),
+      // appBar: AppBar(
+      //   automaticallyImplyLeading: false,
+      //   title: Text(
+      //     'ค้นหาเมนูอาหาร',
+      //     style: GoogleFonts.itim(fontSize: 26),
+      //   ),
+      // ),
       body: Column(
         children: [
+          const SizedBox(
+            height: 40,
+          ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -155,7 +157,7 @@ class _SearchPageState extends State<SearchPage> {
                     searchRecipes(); // เรียกใช้ฟังก์ชันค้นหาหลังจากกรอกคำค้น
                   },
                   decoration: InputDecoration(
-                    labelText: 'กินอะไรดี...',
+                    labelText: 'ค้นหาสูตรอาหาร',
                     labelStyle: GoogleFonts.itim(),
                     suffixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
@@ -176,7 +178,7 @@ class _SearchPageState extends State<SearchPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ทั้งหมด'
-                              ? Colors.green
+                              ? Colors.orange
                               : Colors.grey,
                           minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
                         ),
@@ -202,7 +204,7 @@ class _SearchPageState extends State<SearchPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของคาว'
-                              ? Colors.green
+                              ? Colors.orange
                               : Colors.grey,
                           minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
                         ),
@@ -228,7 +230,7 @@ class _SearchPageState extends State<SearchPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของหวาน'
-                              ? Colors.green
+                              ? Colors.orange
                               : Colors.grey,
                           minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
                         ),

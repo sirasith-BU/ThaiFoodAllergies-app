@@ -1,25 +1,52 @@
 import 'package:flutter/material.dart';
-import 'MainPage.dart';
+import 'package:foodallergies_app/Screens/MainPage.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 
 class Fallergies extends StatefulWidget {
-  const Fallergies({super.key});
+  const Fallergies(BuildContext context, {super.key});
 
   @override
   State<Fallergies> createState() => _FallergiesState();
 }
 
 class _FallergiesState extends State<Fallergies> {
+  final _auth = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _allergic_ingr = TextEditingController();
+
+  Future<void> _saveAllergy() async {
+    final user = _auth.currentUser;
+    if (user != null && _allergic_ingr.text.isNotEmpty) {
+      try {
+        await _firestore.collection("allergic_food").add({
+          'user_id': user.uid,
+          'allergic_ingr': _allergic_ingr.text,
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("บันทึกข้อมูลสำเร็จ")),
+        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainPage()));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("เกิดข้อผิดพลาดในการบันทึกข้อมูล")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.green,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.green,
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => (const MainPage())));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainPage()));
             },
             child: const Text(
               'Skip',
@@ -34,35 +61,41 @@ class _FallergiesState extends State<Fallergies> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 "กรุณากรอกอาหารที่แพ้",
-                style: TextStyle(
+                style: GoogleFonts.itim(
+                  textStyle: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 37),
+                    fontSize: 42,
+                  ),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               TextFormField(
-                decoration: const InputDecoration(
-                  labelText: "กรุณากรอกอาหารที่แพ้ เช่น นม",
-                  labelStyle: TextStyle(color: Colors.white),
-                ),
+                controller: _allergic_ingr,
+                decoration: InputDecoration(
+                    labelText: "กรุณากรอกอาหารที่แพ้ เช่น นม",
+                    labelStyle: GoogleFonts.itim(
+                        textStyle:
+                            const TextStyle(color: Colors.white, fontSize: 20)),
+                    enabledBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white))),
                 style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: _saveAllergy,
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(Colors.lightGreen),
                   minimumSize: WidgetStateProperty.all(const Size(150, 50)),
                 ),
-                child: const Text(
+                child: Text(
                   "บันทึก",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20),
+                  style: GoogleFonts.itim(
+                      textStyle:
+                          const TextStyle(color: Colors.white, fontSize: 24)),
                 ),
               ),
             ],

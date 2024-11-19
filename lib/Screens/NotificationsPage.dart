@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foodallergies_app/notifications/notification.dart';
 
 class Notifications extends StatefulWidget {
   const Notifications({super.key});
@@ -12,17 +13,17 @@ class _NotificationsState extends State<Notifications> {
     {
       'title': 'สมหมาย รักคุณเท่าฟ้า',
       'description': 'ได้แสดงความคิดเห็น',
-      'image': 'https://via.placeholder.com/150'
+      'image': ''
     },
     {
       'title': 'สมชาย รักคุณเท่าดิน',
       'description': 'ได้แสดงความคิดเห็น',
-      'image': 'https://via.placeholder.com/150'
+      'image': ''
     },
     {
       'title': 'สมรักษ์ รักคุณเท่าน้ำ',
       'description': 'ได้แสดงความคิดเห็น',
-      'image': 'https://via.placeholder.com/150'
+      'image': ''
     },
   ];
 
@@ -48,7 +49,7 @@ class _NotificationsState extends State<Notifications> {
         itemBuilder: (context, index) {
           final notification = notifications[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -63,12 +64,12 @@ class _NotificationsState extends State<Notifications> {
                 ],
               ),
               child: ListTile(
-                leading: Image.network(
-                  notification['image']!,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
+                // leading: Image.network(
+                //   notification['image']!,
+                //   width: 50,
+                //   height: 50,
+                //   fit: BoxFit.cover,
+                // ),
                 title: Text(
                   notification['title']!,
                   style: const TextStyle(
@@ -77,6 +78,13 @@ class _NotificationsState extends State<Notifications> {
                   ),
                 ),
                 subtitle: Text(notification['description']!),
+                onTap: () {
+                  // เรียก NotificationService.showInstantNotification
+                  NotificationService.showInstantNotification(
+                    notification['title']!,
+                    notification['description']!,
+                  );
+                },
               ),
             ),
           );

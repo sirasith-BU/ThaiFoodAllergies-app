@@ -1,20 +1,14 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:foodallergies_app/Screens/SearchPage.dart';
-import 'Screens/MainPage.dart';
-import 'Screens/ProfilePage.dart';
-import 'Screens/FallergiesPage.dart';
-import 'Screens/LoginPage.dart';
-import 'Screens/RegisterPage.dart';
-import 'Screens/Changepass.dart';
+import 'package:foodallergies_app/notifications/notification.dart';
+import 'package:foodallergies_app/wrapper.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
-void main() {
-  var login = const Login();
-  var regis = const Register();
-  var changepass = const Changepass();
-  var fallergies = const Fallergies();
-  var main = const MainPage();
-  var profile = const Profile();
-  var search = const Search();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await NotificationService.init();
+  tz.initializeTimeZones();
 
-  runApp(MaterialApp(home: login));
+  runApp(const MaterialApp(home: Wrapper()));
 }
