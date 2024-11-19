@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'RecipesRatingPage.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class RecipesDetailPage extends StatefulWidget {
   final int recipesId;
@@ -19,6 +20,231 @@ class RecipesDetailPage extends StatefulWidget {
 
   @override
   _RecipesDetailPageState createState() => _RecipesDetailPageState();
+}
+
+Widget _RecipeOverallRating(int recipesId) {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  return StreamBuilder<QuerySnapshot>(
+    stream: firestore
+        .collection('recipeRating')
+        .where('recipes_id', isEqualTo: recipesId)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final ratings = snapshot.data!.docs;
+
+      if (ratings.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            "ยังไม่มีการให้คะแนน",
+            style: GoogleFonts.itim(fontSize: 18),
+          ),
+        );
+      }
+
+      double totalAvgScore = 0;
+      double totalTasteRating = 0;
+      double totalDifficultRating = 0;
+      double totalPresentRating = 0;
+      int count = ratings.length;
+
+      List<Future<void>> futureList = [];
+
+      // Step 1: ดึงคำถามจาก askRating
+      String qTasteRating = '';
+      String qDifficultRating = '';
+      String qPresentRating = '';
+
+      for (var ratingDoc in ratings) {
+        final askRatingId = ratingDoc['askRating_id'];
+
+        Future<void> ratingFuture = firestore
+            .collection('askRating')
+            .doc(askRatingId)
+            .get()
+            .then((askRatingSnapshot) {
+          if (askRatingSnapshot.exists) {
+            final askRating = askRatingSnapshot.data();
+            final tasteRating = askRating?['taste_rating'] ?? 0;
+            final difficultRating = askRating?['difficult_rating'] ?? 0;
+            final presentRating = askRating?['present_rating'] ?? 0;
+
+            totalTasteRating += tasteRating;
+            totalDifficultRating += difficultRating;
+            totalPresentRating += presentRating;
+
+            totalAvgScore +=
+                (tasteRating + difficultRating + presentRating) / 3;
+
+            // ดึงคำถาม
+            qTasteRating = askRating?['qTaste_rating'] ?? '';
+            qDifficultRating = askRating?['qDifficult_rating'] ?? '';
+            qPresentRating = askRating?['qPresent_rating'] ?? '';
+          }
+        });
+
+        futureList.add(ratingFuture);
+      }
+
+      return FutureBuilder(
+        future: Future.wait(futureList),
+        builder: (context, futureSnapshot) {
+          if (futureSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          double avgScore = totalAvgScore / count;
+          double avgTaste = totalTasteRating / count;
+          double avgDifficult = totalDifficultRating / count;
+          double avgPresent = totalPresentRating / count;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'คะแนนโดยรวม',
+                  style: GoogleFonts.itim(
+                    textStyle: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.star, color: Colors.yellow, size: 40),
+                  const SizedBox(width: 8),
+                  Text(
+                    avgScore.toStringAsFixed(1),
+                    style: GoogleFonts.itim(fontSize: 28),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'การให้คะแนนจากผู้ใช้จำนวน $count คน',
+                  style: GoogleFonts.itim(fontSize: 18),
+                ),
+              ),
+              // Horizontal Chart for taste rating
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    child: Text(
+                      qTasteRating,
+                      style: GoogleFonts.itim(fontSize: 18),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 150, // ความสูงของกราฟ
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.center,
+                        maxY: 5, // max คะแนนที่ได้
+                        barGroups: [
+                          BarChartGroupData(
+                            x: 0,
+                            barRods: [
+                              BarChartRodData(
+                                toY: avgTaste,
+                                color: Colors.blue,
+                                width: 20,
+                                borderRadius: BorderRadius.zero,
+                              ),
+                            ],
+                          ),
+                        ],
+                        titlesData: FlTitlesData(show: true),
+                        gridData: FlGridData(show: false),
+                      ),
+                    ),
+                  ),
+
+                  // Horizontal Chart for difficult rating
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      qDifficultRating,
+                      style: GoogleFonts.itim(fontSize: 18),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 150, // ความสูงของกราฟ
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 5, // max คะแนนที่ได้
+                        barGroups: [
+                          BarChartGroupData(
+                            x: 0,
+                            barRods: [
+                              BarChartRodData(
+                                toY: avgDifficult,
+                                color: Colors.orange,
+                                width: 20,
+                                borderRadius: BorderRadius.zero,
+                              ),
+                            ],
+                          ),
+                        ],
+                        titlesData: FlTitlesData(show: true),
+                        gridData: FlGridData(show: false),
+                      ),
+                    ),
+                  ),
+
+                  // Horizontal Chart for presentation rating
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      qPresentRating,
+                      style: GoogleFonts.itim(fontSize: 18),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 150, // ความสูงของกราฟ
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 5, // max คะแนนที่ได้
+                        barGroups: [
+                          BarChartGroupData(
+                            x: 0,
+                            barRods: [
+                              BarChartRodData(
+                                toY: avgPresent,
+                                color: Colors.green,
+                                width: 20,
+                                borderRadius: BorderRadius.zero,
+                              ),
+                            ],
+                          ),
+                        ],
+                        titlesData: FlTitlesData(show: true),
+                        gridData: FlGridData(show: false),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 class _RecipesDetailPageState extends State<RecipesDetailPage> {
@@ -38,7 +264,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context, true); // ส่งค่า true กลับไปที่หน้า Favorite
+            Navigator.pop(context, true);
           },
         ),
       ),
@@ -328,7 +554,8 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 10),
+            Container(child: _RecipeOverallRating(widget.recipesId)),
           ],
         ),
       ),

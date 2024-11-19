@@ -136,7 +136,7 @@ class _SearchPageState extends State<SearchPage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          'ค้นหาเมนูอาหาร',
+          'ค้นหาสูตรอาหาร',
           style: GoogleFonts.itim(fontSize: 26),
         ),
       ),

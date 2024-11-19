@@ -14,10 +14,10 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 4;
+  int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const Home(),
+    const HomePage(),
     const SearchPage(),
     const Notifications(),
     const FavoritePage(),
@@ -30,40 +30,40 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: _pages[_selectedIndex],
-    bottomNavigationBar: BottomNavigationBar(
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'หน้าแรก',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.search),
-          label: 'ค้นหา',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications),
-          label: 'การแจ้งเตือน',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.favorite),
-          label: 'รายการโปรด',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'โปรไฟล์',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: Colors.green,
-      unselectedItemColor: Colors.grey,
-      selectedLabelStyle: GoogleFonts.itim(), // ใช้ GoogleFonts.itim() สำหรับตัวเลือกที่ถูกเลือก
-      unselectedLabelStyle: GoogleFonts.itim(), // ใช้ GoogleFonts.itim() สำหรับตัวเลือกที่ไม่ถูกเลือก
-      onTap: _onItemTapped,
-    ),
-  );
-}
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'หน้าแรก',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'ค้นหา',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'การแจ้งเตือน',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'รายการโปรด',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'โปรไฟล์',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.green,
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: GoogleFonts.itim(),
+        unselectedLabelStyle: GoogleFonts.itim(),
+        onTap: _onItemTapped,
+      ),
+    );
+  }
 }
