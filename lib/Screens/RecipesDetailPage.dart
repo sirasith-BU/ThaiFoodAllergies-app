@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -106,29 +107,33 @@ Widget _RecipeOverallRating(int recipesId) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'คะแนนโดยรวม',
-                  style: GoogleFonts.itim(
-                    textStyle: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Text(
+                'คะแนนโดยรวม',
+                style: GoogleFonts.itim(
+                  textStyle: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
+              Text(
+                avgScore.toStringAsFixed(1),
+                style: GoogleFonts.itim(fontSize: 100),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.star, color: Colors.yellow, size: 40),
-                  const SizedBox(width: 8),
-                  Text(
-                    avgScore.toStringAsFixed(1),
-                    style: GoogleFonts.itim(fontSize: 28),
-                  ),
-                ],
+                children: List.generate(5, (index) {
+                  // คำนวณสีของดาวตาม avgScore
+                  return Icon(
+                    Icons.star,
+                    color: (index < avgScore.round())
+                        ? Colors.yellow
+                        : Colors.grey,
+                    size: 40,
+                  );
+                }),
               ),
+
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
@@ -137,91 +142,42 @@ Widget _RecipeOverallRating(int recipesId) {
                 ),
               ),
               // Horizontal Chart for taste rating
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: Text(
-                      qTasteRating,
-                      style: GoogleFonts.itim(fontSize: 18),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 150, // ความสูงของกราฟ
+              SizedBox(
+                height: 250,
+                width: 400,
+                child: RotatedBox(
+                  quarterTurns: 1,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 60),
                     child: BarChart(
                       BarChartData(
-                        alignment: BarChartAlignment.center,
-                        maxY: 5, // max คะแนนที่ได้
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 5,
                         barGroups: [
                           BarChartGroupData(
                             x: 0,
                             barRods: [
                               BarChartRodData(
                                 toY: avgTaste,
-                                color: Colors.blue,
+                                color: Colors.green,
                                 width: 20,
                                 borderRadius: BorderRadius.zero,
                               ),
                             ],
                           ),
-                        ],
-                        titlesData: FlTitlesData(show: true),
-                        gridData: FlGridData(show: false),
-                      ),
-                    ),
-                  ),
-
-                  // Horizontal Chart for difficult rating
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      qDifficultRating,
-                      style: GoogleFonts.itim(fontSize: 18),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 150, // ความสูงของกราฟ
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: 5, // max คะแนนที่ได้
-                        barGroups: [
                           BarChartGroupData(
-                            x: 0,
+                            x: 1,
                             barRods: [
                               BarChartRodData(
                                 toY: avgDifficult,
-                                color: Colors.orange,
+                                color: Colors.green,
                                 width: 20,
                                 borderRadius: BorderRadius.zero,
                               ),
                             ],
                           ),
-                        ],
-                        titlesData: FlTitlesData(show: true),
-                        gridData: FlGridData(show: false),
-                      ),
-                    ),
-                  ),
-
-                  // Horizontal Chart for presentation rating
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      qPresentRating,
-                      style: GoogleFonts.itim(fontSize: 18),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 150, // ความสูงของกราฟ
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: 5, // max คะแนนที่ได้
-                        barGroups: [
                           BarChartGroupData(
-                            x: 0,
+                            x: 2,
                             barRods: [
                               BarChartRodData(
                                 toY: avgPresent,
@@ -232,12 +188,67 @@ Widget _RecipeOverallRating(int recipesId) {
                             ],
                           ),
                         ],
-                        titlesData: FlTitlesData(show: true),
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: false,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: GoogleFonts.itim(fontSize: 14),
+                                );
+                              },
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 100,
+                              getTitlesWidget: (value, meta) {
+                                switch (value.toInt()) {
+                                  case 0:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        qTasteRating,
+                                        style: GoogleFonts.itim(fontSize: 16),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  case 1:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        qDifficultRating,
+                                        style: GoogleFonts.itim(fontSize: 16),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  case 2:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        qPresentRating,
+                                        style: GoogleFonts.itim(fontSize: 16),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  default:
+                                    return const Text('');
+                                }
+                              },
+                            ),
+                          ),
+                          topTitles: const AxisTitles(),
+                          rightTitles: const AxisTitles(),
+                        ),
                         gridData: FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           );
@@ -247,8 +258,139 @@ Widget _RecipeOverallRating(int recipesId) {
   );
 }
 
+Widget _CommentRecipes(int recipesId) {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('recipeRating')
+        .where('recipes_id', isEqualTo: recipesId)
+        .orderBy('date', descending: true)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final ratingDocs = snapshot.data!.docs;
+
+      if (ratingDocs.isEmpty) {
+        return const Center(
+          child: Text(
+            "ยังไม่มีความคิดเห็น",
+            style: TextStyle(fontSize: 16),
+          ),
+        );
+      }
+
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: ratingDocs.length,
+        itemBuilder: (context, index) {
+          final ratingData = ratingDocs[index].data() as Map<String, dynamic>;
+          final userId = ratingData['user_id'];
+          final askRatingId = ratingData['askRating_id']; // ดึง askRating_id
+          final date = ratingData['date'] ?? '';
+
+          // ดึงข้อมูลจาก askRating
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('askRating')
+                .doc(askRatingId) // ใช้ askRatingId ในการดึงข้อมูลจาก askRating
+                .get(),
+            builder: (context, askRatingSnapshot) {
+              if (!askRatingSnapshot.hasData) {
+                return const SizedBox.shrink(); // ไม่แสดงอะไรระหว่างรอข้อมูล
+              }
+
+              final askRatingDoc = askRatingSnapshot.data!;
+              final askRatingData = askRatingDoc.data() as Map<String, dynamic>;
+
+              final avgScore = (askRatingData['avgScore'] ?? 0).toDouble();
+              final _avgScorefix1 = avgScore.toStringAsFixed(1);
+              final comment = askRatingData['comment'] ?? '';
+
+              // ดึงข้อมูลผู้ใช้
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('user')
+                    .doc(userId)
+                    .get(),
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const SizedBox
+                        .shrink(); // ไม่แสดงอะไรระหว่างรอข้อมูล
+                  }
+
+                  final userDoc = userSnapshot.data!;
+                  final userData = userDoc.data() as Map<String, dynamic>;
+
+                  final username = userData['username'] ?? 'ผู้ใช้ไม่ระบุชื่อ';
+
+                  // เช็คว่ามีฟิลด์ profileImage หรือไม่
+                  final profileImage = userData.containsKey('profileImage')
+                      ? userData['profileImage']
+                      : 'assets/defaultProfile.png';
+
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundImage: AssetImage(profileImage),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(username,
+                                  style: GoogleFonts.itim(fontSize: 20)),
+                            ),
+                            Text(
+                              date.toString(),
+                              style: GoogleFonts.itim(
+                                  fontSize: 16, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            for (int i = 0; i < 5; i++)
+                              Icon(
+                                Icons.star,
+                                color: i < avgScore.round()
+                                    ? Colors.yellow
+                                    : Colors.grey,
+                                size: 16,
+                              ),
+                            const SizedBox(width: 5),
+                            Text("($_avgScorefix1)"),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          comment,
+                          style: GoogleFonts.itim(fontSize: 22),
+                        ),
+                        const Divider(),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    },
+  );
+}
+
 class _RecipesDetailPageState extends State<RecipesDetailPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _auth = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -367,6 +509,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                 stream: _firestore
                     .collection('recipeRating')
                     .where('recipes_id', isEqualTo: widget.recipesId)
+                    .where('user_id', isEqualTo: _auth.currentUser?.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
@@ -390,13 +533,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                         .then((askRatingSnapshot) {
                       if (askRatingSnapshot.exists) {
                         final askRating = askRatingSnapshot.data();
-                        final tasteRating = askRating?['taste_rating'] ?? 0;
-                        final difficultRating =
-                            askRating?['difficult_rating'] ?? 0;
-                        final presentRating = askRating?['present_rating'] ?? 0;
-
-                        totalScore +=
-                            (tasteRating + difficultRating + presentRating) / 3;
+                        totalScore = askRating?['avgScore'] ?? 0;
                       }
                     });
 
@@ -556,6 +693,8 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
             ),
             const SizedBox(height: 10),
             Container(child: _RecipeOverallRating(widget.recipesId)),
+            const SizedBox(height: 10),
+            Container(child: _CommentRecipes(widget.recipesId)),
           ],
         ),
       ),
