@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'RecipesDetailPage.dart';
 
 class SearchPage extends StatefulWidget {
@@ -23,44 +22,55 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void fetchAllRecipes() async {
-    QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection("recipes").get();
+    Query query = FirebaseFirestore.instance.collection("recipes");
+    QuerySnapshot snapshot = await query.get();
     setState(() {
-      searchResults = snapshot.docs
-          .map((doc) => {
-                "id": doc.id,
-                "name": doc["name"],
-                "image": doc["image"], // รูปภาพเมนูอาหาร
-              })
-          .toList();
+      searchResults = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
+        return {
+          "id": data?["recipes_id"] ?? "", // Use null-aware access
+          "name": data?["name"] ?? "Unknown Name",
+          "image": data?["image"] ??
+              "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
+        };
+      }).toList();
     });
   }
 
   void searchRecipes() async {
-    if (searchQuery.isNotEmpty) {
-      // หากมีการพิมพ์คำค้นหา
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection("recipes")
-          .where("name", isGreaterThanOrEqualTo: searchQuery)
-          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff')
-          .get();
+    Query query = FirebaseFirestore.instance.collection("recipes");
 
-      setState(() {
-        searchResults = snapshot.docs
-            .map((doc) => {
-                  "id": doc.id,
-                  "name": doc["name"],
-                  "image": doc["image"], // รูปภาพเมนูอาหาร
-                })
-            .toList();
-      });
-    } else {
-      // หากไม่กรอกคำค้นหาก็โหลดเมนูทั้งหมด
-      fetchAllRecipes();
+    if (searchQuery.isNotEmpty) {
+      query = query
+          .where("name", isGreaterThanOrEqualTo: searchQuery)
+          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
     }
+
+    if (selectedFilter == 'ของคาว') {
+      query = query.where("type", isEqualTo: "คาว");
+    } else if (selectedFilter == 'ของหวาน') {
+      query = query.where("type", isEqualTo: "หวาน");
+    }
+
+    QuerySnapshot snapshot = await query.get();
+    setState(() {
+      searchResults = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
+        return {
+          "id": data?["recipes_id"] ?? "", // Use null-aware access
+          "name": data?["name"] ?? "Unknown Name",
+          "image": data?["image"] ??
+              "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
+        };
+      }).toList();
+    });
   }
 
-  Widget _buildImageSliderItem(String name, int recipeId) {
+  Widget _buildImageSliderItem(String name, int recipeId, String imageUrl) {
+    imageUrl = imageUrl.isNotEmpty
+        ? imageUrl
+        : 'https://example.com/default_image.png';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: GestureDetector(
@@ -71,8 +81,7 @@ class _SearchPageState extends State<SearchPage> {
               builder: (context) => RecipesDetailPage(
                 recipesId: recipeId,
                 name: name,
-                imageUrl:
-                    "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=", // ส่ง URL ของรูปภาพไปยัง RecipesDetailPage
+                imageUrl: imageUrl, // ใช้ URL จาก Firestore
               ),
             ),
           );
@@ -95,12 +104,27 @@ class _SearchPageState extends State<SearchPage> {
               borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  Image.network(
-                    "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
+                  imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.network(
+                              'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            );
+                          },
+                        )
+                      : Image.network(
+                          'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -172,7 +196,7 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ทั้งหมด';
                           });
-                          fetchAllRecipes(); // ดึงข้อมูลทั้งหมดเมื่อเลือกทั้งหมด
+                          fetchAllRecipes(); // ดึงข้อมูลทั้งหมดเมื่อเลือก "ทั้งหมด"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ทั้งหมด'
@@ -183,13 +207,14 @@ class _SearchPageState extends State<SearchPage> {
                         child: Text(
                           'ทั้งหมด',
                           style: GoogleFonts.itim(
-                              textStyle: TextStyle(
-                            color: Colors.white,
-                            fontWeight: selectedFilter == 'ทั้งหมด'
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 20,
-                          )),
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ทั้งหมด'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 20,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -199,23 +224,25 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ของคาว';
                           });
+                          fetchAllRecipes(); // ดึงข้อมูลประเภท "คาว"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของคาว'
                               ? Colors.green
                               : Colors.grey,
-                          minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
+                          minimumSize: const Size(0, 50),
                         ),
                         child: Text(
                           'ของคาว',
                           style: GoogleFonts.itim(
-                              textStyle: TextStyle(
-                            color: Colors.white,
-                            fontWeight: selectedFilter == 'ของคาว'
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 20,
-                          )),
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ของคาว'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 20,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -225,23 +252,25 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ของหวาน';
                           });
+                          fetchAllRecipes(); // ดึงข้อมูลประเภท "หวาน"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของหวาน'
                               ? Colors.green
                               : Colors.grey,
-                          minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
+                          minimumSize: const Size(0, 50),
                         ),
                         child: Text(
                           'ของหวาน',
                           style: GoogleFonts.itim(
-                              textStyle: TextStyle(
-                            color: Colors.white,
-                            fontWeight: selectedFilter == 'ของหวาน'
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 18,
-                          )),
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ของหวาน'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 19,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -252,28 +281,50 @@ class _SearchPageState extends State<SearchPage> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: searchQuery.isNotEmpty
-                  ? FirebaseFirestore.instance
-                      .collection("recipes")
+              stream: () {
+                Query query = FirebaseFirestore.instance.collection("recipes");
+
+                // Apply search query filter
+                if (searchQuery.isNotEmpty) {
+                  query = query
                       .where("name", isGreaterThanOrEqualTo: searchQuery)
-                      .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff')
-                      .snapshots()
-                  : FirebaseFirestore.instance
-                      .collection("recipes")
-                      .snapshots(),
+                      .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
+                }
+
+                // Apply selectedFilter
+                if (selectedFilter == 'ของคาว') {
+                  query = query.where("type", isEqualTo: "ของคาว");
+                } else if (selectedFilter == 'ของหวาน') {
+                  query = query.where("type", isEqualTo: "ของหวาน");
+                }
+
+                return query.snapshots();
+              }(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'ไม่พบข้อมูล',
+                      style: GoogleFonts.itim(fontSize: 24),
+                    ),
+                  );
+                }
                 return ListView.builder(
-                  scrollDirection: Axis.vertical,
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
                     final recipeDocument = snapshot.data!.docs[index];
-                    final name = recipeDocument["name"];
-                    final recId = recipeDocument["recipes_id"];
+                    final data = recipeDocument.data()
+                        as Map<String, dynamic>?; // Safe cast
+                    final name = data?["name"] ?? "Unknown Recipe";
+                    final recId =
+                        data?["recipes_id"] ?? -1; // Use a default value
+                    final imageUrl = data?["image"] ??
+                        "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=";
 
-                    return _buildImageSliderItem(name, recId);
+                    return _buildImageSliderItem(name, recId, imageUrl);
                   },
                 );
               },

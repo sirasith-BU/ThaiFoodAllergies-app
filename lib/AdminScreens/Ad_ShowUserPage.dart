@@ -37,6 +37,8 @@ class _ShowUserPageState extends State<ShowUserPage> {
     String username = userDoc['username'] ?? '';
     String email = userDoc['email'] ?? '';
     bool isAdmin = (userDoc.data() as Map<String, dynamic>)['admin'] == true;
+    bool isDisabled =
+        (userDoc.data() as Map<String, dynamic>)['isDisabled'] == true;
 
     // ตรวจสอบว่ามี 'profileImage' ในเอกสารหรือไม่
     String profileImage =
@@ -45,21 +47,62 @@ class _ShowUserPageState extends State<ShowUserPage> {
 
     return Card(
       elevation: 3,
+      color: isDisabled
+          ? Colors.grey[300]
+          : Colors.white, // เปลี่ยนสีพื้นหลังเมื่อ isDisabled
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10), // ทำมุมมน
         side: BorderSide(
-          color: isAdmin ? Colors.orange : Colors.green, // สีของขอบตาม admin
+          color: isDisabled
+              ? Colors.grey // ขอบสีเทาเมื่อ isDisabled
+              : (isAdmin
+                  ? Colors.orange
+                  : Colors.green), // ขอบตาม admin หรือ user ปกติ
           width: 2, // ความหนาของขอบ
         ),
       ),
       child: ListTile(
         leading: CircleAvatar(
           radius: 25,
-          backgroundImage:
-              AssetImage(profileImage), // โหลดรูปจาก Firebase หรือจาก assets
+          backgroundColor: Colors.transparent, // ทำให้พื้นหลังโปร่งใส
+          child: ClipOval(
+            child: ColorFiltered(
+              colorFilter: isDisabled
+                  ? const ColorFilter.mode(
+                      Colors.grey, // เปลี่ยนภาพเป็นสีเทา
+                      BlendMode.saturation,
+                    )
+                  : const ColorFilter.mode(
+                      Colors.transparent, // ใช้ภาพปกติ
+                      BlendMode.multiply,
+                    ),
+              child: Image.asset(
+                profileImage,
+                width: 50, // กำหนดขนาดภาพให้เหมาะสม
+                height: 50, // กำหนดขนาดภาพให้เหมาะสม
+                fit: BoxFit.cover, // ทำให้ภาพเติมเต็มพื้นที่กลม
+              ),
+            ),
+          ),
         ),
-        title: Text(username, style: GoogleFonts.itim(fontSize: 18)),
-        subtitle: Text(email, style: GoogleFonts.itim(fontSize: 14)),
+        title: Text(
+          username,
+          style: GoogleFonts.itim(
+            fontSize: 18,
+            color: isDisabled
+                ? Colors.grey
+                : Colors.black, // ตัวหนังสือสีเทาเมื่อ isDisabled
+          ),
+        ),
+        subtitle: Text(
+          email,
+          style: GoogleFonts.itim(
+            fontSize: 14,
+            color: isDisabled
+                ? Colors.grey
+                : Colors.black54, // ตัวหนังสือสีเทาเมื่อ isDisabled
+          ),
+        ),
         trailing: IconButton(
           icon: const Icon(Icons.edit, color: Colors.orange, size: 40),
           onPressed: () {
@@ -84,16 +127,12 @@ class _ShowUserPageState extends State<ShowUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('ค้นหาผู้ใช้', style: GoogleFonts.itim(fontSize: 24)),
-      // ),
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const SizedBox(
-              height: 40,
-            ),
             // ช่องค้นหาผู้ใช้
             TextField(
               controller: _searchController,
@@ -137,6 +176,7 @@ class _ShowUserPageState extends State<ShowUserPage> {
                 }).toList(),
               ),
             ),
+            const SizedBox(height: 16),
             // แสดงรายชื่อผู้ใช้
             Expanded(
               child: FutureBuilder<List<DocumentSnapshot>>(

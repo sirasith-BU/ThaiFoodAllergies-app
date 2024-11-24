@@ -81,8 +81,8 @@ class _FavoritePageState extends State<FavoritePage> {
           recipesWithScores.add({
             'recipes_id': recipeId,
             'name': recipeData['name'] ?? 'ไม่พบชื่อ',
-            'image':
-                "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=", // Default image if not available
+            'image': recipeData['image'] ?? // <-- ดึง image จาก Firestore
+                "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
             'avgScore': averageScore,
           });
         });
@@ -135,12 +135,28 @@ class _FavoritePageState extends State<FavoritePage> {
                       padding: const EdgeInsets.only(
                           top: 6, left: 6, bottom: 6, right: 0),
                       child: ListTile(
-                        leading: Image.network(
-                          item['image']!,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                        ),
+                        leading:
+                            item['image'] != null && item['image'].isNotEmpty
+                                ? Image.network(
+                                    item['image'],
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.network(
+                                        'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  )
+                                : Image.network(
+                                    'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  ),
                         title: Text(
                           item['name']!,
                           style: GoogleFonts.itim(fontSize: 23),

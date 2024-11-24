@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:foodallergies_app/AdminScreens/Ad_MainPage.dart';
 import 'package:foodallergies_app/Screens/MainPage.dart';
 import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,32 +23,109 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
 
-  gotoMain(BuildContext context) => Navigator.push(
-      context, MaterialPageRoute(builder: (context) => const MainPage()));
-
   _login() async {
     if (_formKey.currentState!.validate()) {
-      final user = await _auth.loginUserWithEmailAndPassword(
-          _email.text, _password.text);
-
-      if (user != null) {
-        gotoMain(context);
-      } else {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("ไม่สามารถเข้าสู่ระบบได้"),
-            content: const Text("กรุณาตรวจสอบ อีเมล หรือ รหัสผ่าน อีกครั้ง"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text("ตกลง"),
-              ),
-            ],
-          ),
+      try {
+        final user = await _auth.loginUserWithEmailAndPassword(
+          _email.text,
+          _password.text,
         );
+
+        if (user != null) {
+          // ดึงข้อมูลผู้ใช้จาก Firestore
+          final userDoc = await FirebaseFirestore.instance
+              .collection('user') // ชื่อ collection ที่เก็บข้อมูลผู้ใช้
+              .doc(user.uid) // ใช้ user.uid เพื่อค้นหาเอกสารของผู้ใช้
+              .get();
+
+          if (userDoc.exists) {
+            final data = userDoc.data();
+            // ตรวจสอบสถานะ isAdmin
+            final isAdmin = data?['isAdmin'];
+            if (isAdmin == true) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminMainPage()),
+              );
+              return; // หยุดกระบวนการต่อหลังไปยัง AdminMainPage
+            }
+          }
+          // ถ้าไม่มีฟิลด์ isDisabled หรือ isAdmin หรือบัญชีไม่ถูกระงับ
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MainPage()),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        // จัดการข้อผิดพลาด
+        if (e.code == 'account-disabled') {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("บัญชีถูกระงับการใช้งาน"),
+              content:
+                  const Text("กรุณาติดต่อทีมสนับสนุนเพื่อขอข้อมูลเพิ่มเติม"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("ตกลง"),
+                ),
+              ],
+            ),
+          );
+        } else if (e.code == 'user-not-found') {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("ไม่สามารถเข้าสู่ระบบได้"),
+              content: const Text("ไม่พบบัญชีผู้ใช้นี้"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("ตกลง"),
+                ),
+              ],
+            ),
+          );
+        } else if (e.code == 'account-deleted') {
+          // เพิ่มกรณี account-deleted
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("บัญชีถูกลบแล้ว"),
+              content: const Text(
+                  "บัญชีนี้ถูกลบออกจากระบบแล้ว โปรดสร้างบัญชีใหม่หากต้องการใช้งานอีกครั้ง"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("ตกลง"),
+                ),
+              ],
+            ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("ไม่สามารถเข้าสู่ระบบได้"),
+              content: const Text("กรุณาตรวจสอบ อีเมล หรือ รหัสผ่าน อีกครั้ง"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("ตกลง"),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -71,12 +151,12 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 80),
               // โลโก้แอป
               Padding(
-                padding: const EdgeInsets.all(13),
+                padding: const EdgeInsets.all(0),
                 child: SizedBox(
-                  width: 250,
-                  height: 250,
+                  width: 300,
+                  height: 300,
                   child: Image.asset(
-                    'assets/foodallergies-logo.png',
+                    'assets/foodallergies-logo.jpg',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -181,10 +261,9 @@ class _LoginState extends State<Login> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
               // ข้อความยังไม่มีบัญชี
               Padding(
-                padding: const EdgeInsets.only(top: 130),
+                padding: const EdgeInsets.only(top: 120),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

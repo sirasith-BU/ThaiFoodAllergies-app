@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class EditRecipesPage extends StatefulWidget {
-  final int recipesId;
-
-  const EditRecipesPage({super.key, required this.recipesId});
+class AdminAddRecipesPage extends StatefulWidget {
+  const AdminAddRecipesPage({super.key});
 
   @override
-  _EditRecipesPageState createState() => _EditRecipesPageState();
+  _AdminAddRecipesPageState createState() => _AdminAddRecipesPageState();
 }
 
-class _EditRecipesPageState extends State<EditRecipesPage> {
+class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _nameController = TextEditingController();
@@ -19,167 +17,65 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
   final TextEditingController _imageController = TextEditingController();
 
   List<Map<String, dynamic>> _ingredients = [];
-  final List<Map<String, dynamic>> _ingredientsToDelete =
-      []; // เก็บวัตถุดิบที่ต้องการลบ
   final String defaultImage =
       'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=';
+
   String _foodType = 'ของคาว'; // ค่าเริ่มต้นเป็น "คาว"
   String _selectedType = 'ของคาว'; // ค่าเริ่มต้นคือ 'คาว'/ รายการประเภทอาหาร
 
   @override
-  void initState() {
-    super.initState();
-    _loadRecipeData();
+  void dispose() {
+    _nameController.dispose();
+    _methodController.dispose();
+    _imageController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadRecipeData() async {
-    try {
-      final recipeSnapshot = await _firestore
-          .collection('recipes')
-          .where('recipes_id', isEqualTo: widget.recipesId)
-          .get();
-
-      if (recipeSnapshot.docs.isNotEmpty) {
-        final recipeData = recipeSnapshot.docs.first.data();
-        _nameController.text = recipeData['name'] ?? '';
-        _methodController.text = recipeData['method'] ?? '';
-        _imageController.text = recipeData['image'] ?? '';
-
-        // เพิ่มการโหลดข้อมูล type
-        _selectedType =
-            recipeData['type'] ?? 'คาว'; // สมมติว่า default คือ 'คาว'
-      }
-
-      final ingredientsSnapshot = await _firestore
-          .collection('ingredients')
-          .where('recipes_id', isEqualTo: widget.recipesId)
-          .get();
-
-      setState(() {
-        _ingredients = ingredientsSnapshot.docs.map((doc) {
-          final data = doc.data();
-          return {
-            'id': doc.id,
-            'name': data['name'] ?? '',
-            'quantity': data['quantity'] ?? '',
-            'unit': data['unit'] ?? '',
-          };
-        }).toList();
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-      );
-    }
+  Future<int> _getNextRecipeId() async {
+    final snapshot = await _firestore.collection('recipes').get();
+    return snapshot.docs.isEmpty ? 1 : (snapshot.docs.length + 1) + 1;
   }
 
   Future<void> _saveRecipe() async {
     try {
       final imageUrl =
           _imageController.text.isEmpty ? defaultImage : _imageController.text;
+      final nextRecipeId = await _getNextRecipeId();
 
-      for (var ingredient in _ingredientsToDelete) {
-        await _firestore
-            .collection('ingredients')
-            .doc(ingredient['id'])
-            .delete();
-      }
+      // เพิ่มสูตรอาหารใหม่
+      await _firestore.collection('recipes').add({
+        'recipes_id': nextRecipeId,
+        'name': _nameController.text,
+        'method': _methodController.text,
+        'image': imageUrl,
+        'type': _foodType, // เพิ่มประเภทอาหาร
+      });
 
-      final querySnapshot = await _firestore
-          .collection('recipes')
-          .where('recipes_id', isEqualTo: widget.recipesId)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final docId = querySnapshot.docs.first.id;
-        await _firestore.collection('recipes').doc(docId).update({
-          'name': _nameController.text,
-          'method': _methodController.text,
-          'image': imageUrl,
-          'type': _foodType, // เพิ่มประเภทอาหาร
+      // เพิ่มวัตถุดิบที่เกี่ยวข้องกับสูตรอาหารใหม่
+      for (var ingredient in _ingredients) {
+        await _firestore.collection('ingredients').add({
+          'recipes_id': nextRecipeId,
+          'name': ingredient['name'],
+          'quantity': ingredient['quantity'],
+          'unit': ingredient['unit'],
         });
       }
 
-      for (var ingredient in _ingredients) {
-        final ingredientDoc = await _firestore
-            .collection('ingredients')
-            .doc(ingredient['id'])
-            .get();
-
-        if (ingredientDoc.exists) {
-          await _firestore
-              .collection('ingredients')
-              .doc(ingredient['id'])
-              .update({
-            'name': ingredient['name'],
-            'quantity': ingredient['quantity'],
-            'unit': ingredient['unit'],
-          });
-        } else {
-          await _firestore.collection('ingredients').add({
-            'recipes_id': widget.recipesId,
-            'name': ingredient['name'],
-            'quantity': ingredient['quantity'],
-            'unit': ingredient['unit'],
-          });
-        }
-      }
-
+      // แสดงข้อความยืนยันการบันทึก
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('แก้ไขสูตรอาหารสำเร็จ!')),
+        const SnackBar(content: Text('เพิ่มสูตรอาหารสำเร็จ!')),
       );
-      Navigator.pop(context, true);
+
+      // เคลียร์ข้อมูล TextField
+      _nameController.clear();
+      _methodController.clear();
+      _imageController.clear();
+      setState(() {
+        _ingredients.clear(); // ลบวัตถุดิบทั้งหมด
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-      );
-    }
-  }
-
-  Future<void> _deleteIngredient(String ingredientId, int index) async {
-    bool shouldDelete = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'ยืนยันการลบ',
-            style: GoogleFonts.itim(),
-          ),
-          content: Text(
-            'คุณต้องการลบวัตถุดิบนี้ใช่ไหม?',
-            style: GoogleFonts.itim(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: Text(
-                'ยกเลิก',
-                style: GoogleFonts.itim(),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              child: Text(
-                'ยืนยัน',
-                style: GoogleFonts.itim(),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldDelete) {
-      setState(() {
-        _ingredientsToDelete.add(_ingredients[index]); // เพิ่มวัตถุดิบที่จะลบ
-        _ingredients.removeAt(index); // ลบจาก UI
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ลบวัตถุดิบเรียบร้อย!')),
       );
     }
   }
@@ -187,9 +83,12 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         title: Text(
-          'แก้ไขสูตรอาหาร',
+          'เพิ่มสูตรอาหาร',
           style: GoogleFonts.itim(),
         ),
       ),
@@ -252,7 +151,7 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
                         });
                       },
                       decoration: const InputDecoration(
-                        labelText: 'ประเภทอาหาร', // ข้อความกำกับที่จะแสดง
+                        labelText: 'ประเภทอาหาร',
                         border: OutlineInputBorder(),
                       ),
                       hint: Text(
@@ -331,12 +230,6 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
                       const SizedBox(
                         height: 64,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          _deleteIngredient(ingredient['id'], index);
-                        },
-                      )
                     ],
                   );
                 },

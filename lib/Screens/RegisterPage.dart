@@ -208,12 +208,10 @@ class _RegisterState extends State<Register> {
                                 firstDate: DateTime(1900),
                                 lastDate: DateTime.now(),
                               );
-                              if (pickedDate != null) {
-                                setState(() {
-                                  _birthDate = pickedDate;
-                                });
-                              }
-                            },
+                              setState(() {
+                                _birthDate = pickedDate;
+                              });
+                                                        },
                           ),
                         ),
                         controller: TextEditingController(

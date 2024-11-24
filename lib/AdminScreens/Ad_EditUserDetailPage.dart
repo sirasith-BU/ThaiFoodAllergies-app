@@ -1,9 +1,7 @@
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class EditUserDetailPage extends StatefulWidget {
   final String userId;
@@ -15,7 +13,6 @@ class EditUserDetailPage extends StatefulWidget {
 }
 
 class _EditUserDetailPageState extends State<EditUserDetailPage> {
-  final _auth = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _usernameController = TextEditingController();
@@ -52,7 +49,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
         _genderController.text = userData['gender'] ?? '';
         _birthdateController.text = userData['birthDate'] ?? '';
         _aboutMeController.text = userData['aboutMe'] ?? '';
-        isDisabled = userData['disable'] ?? false;
+        isDisabled = userData['isDisabled'] ?? false;
         isAdmin = userData['admin'] ?? false;
       });
     }
@@ -76,7 +73,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
       if (_newIsDisabled != null) {
         // ตรวจสอบว่า _newIsDisabled มีค่าหรือไม่
         await _firestore.collection("user").doc(widget.userId).update({
-          'disable': _newIsDisabled, // ใช้ค่าที่เก็บไว้ก่อนหน้านี้
+          'isDisabled': _newIsDisabled, // ใช้ค่าที่เก็บไว้ก่อนหน้านี้
         });
         setState(() {
           isDisabled =
@@ -88,7 +85,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
           content: Text("ข้อมูลผู้ใช้ถูกบันทึกแล้ว", style: GoogleFonts.itim()),
         ),
       );
-      Navigator.pop(context,true);
+      Navigator.pop(context, true);
     }
   }
 
@@ -107,36 +104,67 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
     }
   }
 
-  Future<void> _deleteUserAccount() async {
-    final confirmation = await _showConfirmationDialog(
-      title: "ลบบัญชีผู้ใช้",
-      content: "คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีนี้?",
-    );
+  Future<void> moveUserDataToDeleteCollection(String userId) async {
+    try {
+      // แสดง AlertDialog เพื่อยืนยันก่อนลบ
+      final confirmation = await _showConfirmationDialog(
+        title: "ลบบัญชีผู้ใช้",
+        content: "คุณต้องการลบบัญชีนี้หรือไม่?",
+      );
 
-    if (confirmation) {
-      try {
-        // ลบข้อมูลใน Firestore
-        await _firestore.collection("user").doc(widget.userId).delete();
+      if (!confirmation) return; // ยกเลิกการลบหากผู้ใช้กด "ยกเลิก"
 
-        // ลบบัญชีผู้ใช้ใน Firebase Authentication
-        await _auth.currentUser!.delete();
+      // ดึงข้อมูลผู้ใช้จากคอลเล็กชัน 'user'
+      final userSnapshot =
+          await _firestore.collection("user").doc(userId).get();
+      final userData = userSnapshot.data();
 
+      if (userData != null) {
+        // กำหนดเวลา del_dateTime ในรูปแบบ dd/MM/yyyy HH:mm:ss
+        String formattedDate =
+            DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now());
+
+        // ย้ายข้อมูลไปที่ collection 'deleteUser' พร้อมเพิ่ม 'del_dateTime'
+        await _firestore.collection('deleteUser').doc(userId).set({
+          ...userData,
+          'del_status': 'admin', // ระบุว่า admin เป็นผู้ลบ
+          'del_dateTime': formattedDate, // วันที่และเวลาที่ลบ
+        });
+
+        // ลบข้อมูลจากคอลเล็กชัน 'user'
+        await _firestore.collection('user').doc(userId).delete();
+
+        // แสดงข้อความสำเร็จ
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("บัญชีถูกลบแล้ว", style: GoogleFonts.itim()),
+            content: Text(
+              "ผู้ใช้ถูกลบเรียบร้อยแล้ว",
+              style: GoogleFonts.itim(),
+            ),
           ),
         );
-
+      } else {
+        // กรณีไม่พบข้อมูลในคอลเล็กชัน 'user'
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "ไม่พบข้อมูลผู้ใช้นี้ในระบบ",
+              style: GoogleFonts.itim(),
+            ),
+          ),
+        );
         Navigator.pop(context, true);
-      } on FirebaseAuthException catch (e) {
-        // จัดการข้อผิดพลาด เช่น ต้องการการตรวจสอบสิทธิ์อีกครั้ง
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text("เกิดข้อผิดพลาด: ${e.message}", style: GoogleFonts.itim()),
-          ),
-        );
       }
+    } catch (e) {
+      // จัดการข้อผิดพลาด
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "เกิดข้อผิดพลาด: ${e.toString()}",
+            style: GoogleFonts.itim(),
+          ),
+        ),
+      );
     }
   }
 
@@ -284,7 +312,9 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
                     child: SwitchListTile(
                       activeColor: Colors.green,
                       title: Text(
-                        isDisabled ? "เปิดการใช้งานบัญชีผู้ใช้" : "ปิดใช้งานบัญชีผู้ใช้",
+                        isDisabled
+                            ? "เปิดการใช้งานบัญชีผู้ใช้"
+                            : "ปิดใช้งานบัญชีผู้ใช้",
                         style: GoogleFonts.itim(),
                       ),
                       value: !isDisabled,
@@ -311,7 +341,9 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: _deleteUserAccount,
+                onPressed: () async {
+                  await moveUserDataToDeleteCollection(widget.userId);
+                },
                 child: Text(
                   "ลบบัญชี",
                   style: GoogleFonts.itim(fontSize: 18, color: Colors.red),

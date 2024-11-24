@@ -76,12 +76,27 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                 children: [
                   Stack(
                     children: [
-                      Image.network(
-                        recipeData!['image'] ?? widget.imageUrl,
-                        width: double.infinity,
-                        height: 250,
-                        fit: BoxFit.cover,
-                      ),
+                      widget.imageUrl.isNotEmpty
+                          ? Image.network(
+                              widget.imageUrl,
+                              width: double.infinity,
+                              height: 250,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.network(
+                                  'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                                  width: double.infinity,
+                                  height: 250,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.network(
+                              'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                              width: double.infinity,
+                              height: 250,
+                              fit: BoxFit.cover,
+                            ),
                       Positioned(
                         bottom: 0,
                         left: 0,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'HomePage.dart';
-import 'NotificationsPage.dart';
 import 'SearchPage.dart';
 import 'FavoritePage.dart';
 import 'ProfilePage.dart';
@@ -19,7 +18,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const SearchPage(),
-    const Notifications(),
+    // const Notifications(),
     const FavoritePage(),
     const Profile(),
   ];
@@ -44,10 +43,10 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.search),
             label: 'ค้นหา',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'การแจ้งเตือน',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.notifications),
+          //   label: 'การแจ้งเตือน',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
             label: 'รายการโปรด',

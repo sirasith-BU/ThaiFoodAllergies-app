@@ -46,10 +46,10 @@ class _WrapperState extends State<Wrapper> {
                     // ตรวจสอบข้อมูล admin ใน Firestore
                     final data =
                         userSnapshot.data?.data() as Map<String, dynamic>?;
-                    if (data == null || data['admin'] == null) {
+                    if (data == null || data['isAdmin'] == null) {
                       // ถ้าไม่มีข้อมูล admin หรือไม่ได้ตั้งค่า admin ใน Firestore
                       return const Center(child: Text("Invalid user data"));
-                    } else if (data['admin'] == true) {
+                    } else if (data['isAdmin'] == true) {
                       // ถ้า admin เป็น true ให้ไปหน้า AdminMainPage
                       return const AdminMainPage();
                     } else {

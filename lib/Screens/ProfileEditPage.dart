@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:foodallergies_app/Screens/LoginPage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../auth/firebase_auth_services.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -60,6 +62,74 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 Text("การแก้ไขโปรไฟล์เสร็จสิ้น", style: GoogleFonts.itim())),
       );
       Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> _deleteUser() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      // แสดง dialog เพื่อยืนยันการลบบัญชี
+      final confirmDelete = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("ยืนยันการลบบัญชี", style: GoogleFonts.itim()),
+            content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีนี้?",
+                style: GoogleFonts.itim()),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false); // ผู้ใช้กดไม่ลบ
+                },
+                child: Text("ยกเลิก", style: GoogleFonts.itim()),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true); // ผู้ใช้กดยืนยันลบ
+                },
+                child: Text("ลบ", style: GoogleFonts.itim()),
+              ),
+            ],
+          );
+        },
+      );
+
+      // ถ้าผู้ใช้ยืนยันจะลบบัญชี
+      if (confirmDelete ?? false) {
+        // ย้ายข้อมูลของผู้ใช้ไปยังคอลเล็กชัน deleteUser
+        final userSnapshot =
+            await _firestore.collection("user").doc(user.uid).get();
+        final userData = userSnapshot.data();
+        if (userData != null) {
+          // กำหนดเวลา del_dateTime ในรูปแบบ dd/MM/yyyy HH:mm:ss
+          String formattedDate =
+              DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now());
+
+          // ย้ายข้อมูลไปที่ collection 'deleteUser' พร้อมเพิ่ม 'del_dateTime'
+          await _firestore.collection('deleteUser').doc(user.uid).set({
+            ...userData,
+            'del_status': 'user', // ตั้งค่าคอลัมน์ del_status เป็น 'user'
+            'del_dateTime': formattedDate, // วันที่และเวลาลบ
+          });
+        }
+        // ลบข้อมูลจาก Firestore
+        await _firestore.collection('user').doc(user.uid).delete();
+        // ลบบัญชีผู้ใช้จาก Firebase Authentication
+        await user.delete();
+
+        // แสดงข้อความแจ้งเตือนว่าบัญชีถูกลบเรียบร้อยแล้ว
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("บัญชีของคุณถูกลบเรียบร้อยแล้ว",
+                  style: GoogleFonts.itim())),
+        );
+
+        // ไปยังหน้า Login หลังจากลบบัญชี
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Login()),
+        );
+      }
     }
   }
 
@@ -125,6 +195,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Text(
                 "บันทึก",
                 style: GoogleFonts.itim(fontSize: 26, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: _deleteUser,
+              child: Text(
+                "ลบบัญชี",
+                style: GoogleFonts.itim(fontSize: 20, color: Colors.red),
               ),
             ),
           ],

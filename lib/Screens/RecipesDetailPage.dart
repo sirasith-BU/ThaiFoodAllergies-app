@@ -42,11 +42,20 @@ Widget _RecipeOverallRating(int recipesId) {
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            "ยังไม่มีการให้คะแนน",
+            "",
             style: GoogleFonts.itim(fontSize: 18),
           ),
         );
       }
+      // if (ratings.isEmpty) {
+      //   return Padding(
+      //     padding: const EdgeInsets.all(16),
+      //     child: Text(
+      //       "ยังไม่มีการให้คะแนน",
+      //       style: GoogleFonts.itim(fontSize: 18),
+      //     ),
+      //   );
+      // }
 
       double totalAvgScore = 0;
       double totalTasteRating = 0;
@@ -148,7 +157,7 @@ Widget _RecipeOverallRating(int recipesId) {
                 child: RotatedBox(
                   quarterTurns: 1,
                   child: Padding(
-                    padding: EdgeInsets.only(top: 60),
+                    padding: const EdgeInsets.only(top: 20),
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
@@ -240,10 +249,51 @@ Widget _RecipeOverallRating(int recipesId) {
                               },
                             ),
                           ),
-                          topTitles: const AxisTitles(),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                switch (value.toInt()) {
+                                  case 0:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        avgTaste.toStringAsFixed(
+                                            1), // แสดง avgTaste
+                                        style: GoogleFonts.itim(fontSize: 18),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  case 1:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        avgDifficult.toStringAsFixed(
+                                            1), // แสดง avgDifficult
+                                        style: GoogleFonts.itim(fontSize: 18),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  case 2:
+                                    return RotatedBox(
+                                      quarterTurns: -1,
+                                      child: Text(
+                                        avgPresent.toStringAsFixed(
+                                            1), // แสดง avgPresent
+                                        style: GoogleFonts.itim(fontSize: 18),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  default:
+                                    return const Text('');
+                                }
+                              },
+                            ),
+                          ),
                           rightTitles: const AxisTitles(),
                         ),
-                        gridData: FlGridData(show: false),
+                        gridData: const FlGridData(show: false),
                         borderData: FlBorderData(show: false),
                       ),
                     ),
@@ -275,11 +325,19 @@ Widget _CommentRecipes(int recipesId) {
       if (ratingDocs.isEmpty) {
         return const Center(
           child: Text(
-            "ยังไม่มีความคิดเห็น",
+            "",
             style: TextStyle(fontSize: 16),
           ),
         );
       }
+      // if (ratingDocs.isEmpty) {
+      //   return const Center(
+      //     child: Text(
+      //       "ยังไม่มีความคิดเห็น",
+      //       style: TextStyle(fontSize: 16),
+      //     ),
+      //   );
+      // }
 
       return ListView.builder(
         shrinkWrap: true,
@@ -306,7 +364,7 @@ Widget _CommentRecipes(int recipesId) {
               final askRatingData = askRatingDoc.data() as Map<String, dynamic>;
 
               final avgScore = (askRatingData['avgScore'] ?? 0).toDouble();
-              final _avgScorefix1 = avgScore.toStringAsFixed(1);
+              final avgScorefix1 = avgScore.toStringAsFixed(1);
               final comment = askRatingData['comment'] ?? '';
 
               // ดึงข้อมูลผู้ใช้
@@ -366,7 +424,7 @@ Widget _CommentRecipes(int recipesId) {
                                 size: 16,
                               ),
                             const SizedBox(width: 5),
-                            Text("($_avgScorefix1)"),
+                            Text("($avgScorefix1)"),
                           ],
                         ),
                         const SizedBox(height: 5),
@@ -416,12 +474,27 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
           children: [
             Stack(
               children: [
-                Image.network(
-                  widget.imageUrl,
-                  width: double.infinity,
-                  height: 250,
-                  fit: BoxFit.cover,
-                ),
+                widget.imageUrl.isNotEmpty
+                    ? Image.network(
+                        widget.imageUrl,
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.network(
+                            'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                            width: double.infinity,
+                            height: 250,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      )
+                    : Image.network(
+                        'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
+                      ),
                 Positioned(
                   bottom: 0,
                   left: 0,
