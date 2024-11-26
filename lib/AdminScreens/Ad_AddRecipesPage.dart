@@ -16,11 +16,11 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
   final TextEditingController _methodController = TextEditingController();
   final TextEditingController _imageController = TextEditingController();
 
-  List<Map<String, dynamic>> _ingredients = [];
+  final List<Map<String, dynamic>> _ingredients = [];
   final String defaultImage =
       'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=';
 
-  String _foodType = 'ของคาว'; // ค่าเริ่มต้นเป็น "คาว"
+  final String _foodType = 'ของคาว'; // ค่าเริ่มต้นเป็น "คาว"
   String _selectedType = 'ของคาว'; // ค่าเริ่มต้นคือ 'คาว'/ รายการประเภทอาหาร
 
   @override

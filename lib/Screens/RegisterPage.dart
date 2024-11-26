@@ -87,7 +87,7 @@ class _RegisterState extends State<Register> {
           "birthDate": birthDateString,
           "email": _email.text,
           "password": _password.text,
-          "admin": false
+          "isAdmin": false
         });
 
         // เปลี่ยนไปยังหน้าถัดไป
@@ -211,7 +211,7 @@ class _RegisterState extends State<Register> {
                               setState(() {
                                 _birthDate = pickedDate;
                               });
-                                                        },
+                            },
                           ),
                         ),
                         controller: TextEditingController(

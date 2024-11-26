@@ -142,16 +142,27 @@ class _EditAllergiesPageState extends State<EditAllergiesPage> {
             }),
             const SizedBox(height: 20),
             Center(
-              child: ElevatedButton(
-                onPressed: _addNewField,
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(Colors.lightGreen),
-                  minimumSize: WidgetStateProperty.all(const Size(150, 50)),
-                ),
-                child: Text(
-                  "เพิ่ม",
-                  style: GoogleFonts.itim(fontSize: 24, color: Colors.white),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 130),
+                child: ElevatedButton(
+                    onPressed: _addNewField,
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.all(Colors.lightGreen),
+                      minimumSize: WidgetStateProperty.all(const Size(150, 50)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          "เพิ่ม",
+                          style: GoogleFonts.itim(
+                              fontSize: 24, color: Colors.white),
+                        ),
+                      ],
+                    )),
               ),
             ),
             const SizedBox(height: 20),

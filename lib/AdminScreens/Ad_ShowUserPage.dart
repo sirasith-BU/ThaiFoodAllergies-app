@@ -36,7 +36,7 @@ class _ShowUserPageState extends State<ShowUserPage> {
   Widget _buildUserItem(DocumentSnapshot userDoc) {
     String username = userDoc['username'] ?? '';
     String email = userDoc['email'] ?? '';
-    bool isAdmin = (userDoc.data() as Map<String, dynamic>)['admin'] == true;
+    bool isAdmin = (userDoc.data() as Map<String, dynamic>)['isAdmin'] == true;
     bool isDisabled =
         (userDoc.data() as Map<String, dynamic>)['isDisabled'] == true;
 

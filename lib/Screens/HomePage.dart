@@ -511,7 +511,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('รายการอาหารทั้งหมด',
+                  child: Text('รายการสูตรอาหารทั้งหมด',
                       style: GoogleFonts.itim(
                         textStyle: const TextStyle(
                           fontSize: 32,
@@ -548,7 +548,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('รีวิว',
+                  child: Text('สูตรอาหารที่มีรีวิว',
                       style: GoogleFonts.itim(
                         textStyle: const TextStyle(
                           fontSize: 32,

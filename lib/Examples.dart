@@ -1,49 +1,87 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:foodallergies_app/Screens/RecipesDetailPage.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import '../auth/firebase_auth_services.dart';
-import 'package:path_provider/path_provider.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:foodallergies_app/Screens/RecipesDetailPage.dart';
+import 'package:foodallergies_app/auth/firebase_auth_services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _SearchPageState extends State<SearchPage> {
+  String selectedFilter = 'ทั้งหมด';
+  String searchQuery = '';
+  List<Map<String, dynamic>> searchResults = [];
   final _auth = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  String? username;
-  String? profileImage;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    fetchAllRecipes();
   }
 
-  Future<Map<String, dynamic>?> _fetchUserData() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      final snapshot = await _firestore.collection("user").doc(user.uid).get();
-      return snapshot.data();
+  Future<List<String>> fetchUserAllergies(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('allergic_food')
+        .where('user_id', isEqualTo: userId)
+        .get();
+    return snapshot.docs.map((doc) => doc['allergic_ingr'].toString()).toList();
+  }
+
+  void fetchAllRecipes() async {
+    Query query = FirebaseFirestore.instance.collection("recipes");
+    QuerySnapshot snapshot = await query.get();
+    setState(() {
+      searchResults = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
+        return {
+          "id": data?["recipes_id"] ?? "", // Use null-aware access
+          "name": data?["name"] ?? "Unknown Name",
+          "image": data?["image"] ??
+              "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
+        };
+      }).toList();
+    });
+  }
+
+  void searchRecipes() async {
+    Query query = FirebaseFirestore.instance.collection("recipes");
+
+    if (searchQuery.isNotEmpty) {
+      query = query
+          .where("name", isGreaterThanOrEqualTo: searchQuery)
+          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
     }
-    return null;
+
+    if (selectedFilter == 'ของคาว') {
+      query = query.where("type", isEqualTo: "คาว");
+    } else if (selectedFilter == 'ของหวาน') {
+      query = query.where("type", isEqualTo: "หวาน");
+    }
+
+    QuerySnapshot snapshot = await query.get();
+    setState(() {
+      searchResults = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
+        return {
+          "id": data?["recipes_id"] ?? "", // Use null-aware access
+          "name": data?["name"] ?? "Unknown Name",
+          "image": data?["image"] ??
+              "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
+        };
+      }).toList();
+    });
   }
 
-  Future<String?> getImagePath(String? imageName) async {
-    if (imageName == null) return null;
-    final Directory appDir = await getApplicationDocumentsDirectory();
-    final String filePath = '${appDir.path}/$imageName';
-    return filePath;
-  }
+  Widget _buildImageSliderItem(String name, int recipeId, String imageUrl) {
+    imageUrl = imageUrl.isNotEmpty
+        ? imageUrl
+        : 'https://example.com/default_image.png';
 
-  Widget _allRecipes(String name, int recipeId, String? imageUrl) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: GestureDetector(
@@ -54,7 +92,7 @@ class _HomePageState extends State<HomePage> {
               builder: (context) => RecipesDetailPage(
                 recipesId: recipeId,
                 name: name,
-                imageUrl: imageUrl ?? '', // ใช้ค่า imageUrl จาก Firestore
+                imageUrl: imageUrl, // ใช้ URL จาก Firestore
               ),
             ),
           );
@@ -77,15 +115,27 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  // ใช้ Image.network เพื่อแสดงรูปจาก Firestore
-                  imageUrl != null && imageUrl.isNotEmpty
+                  imageUrl.isNotEmpty
                       ? Image.network(
                           imageUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.network(
+                              'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            );
+                          },
                         )
-                      : Container(), // หากไม่มี URL รูปก็จะไม่แสดง
+                      : Image.network(
+                          'https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -97,67 +147,14 @@ class _HomePageState extends State<HomePage> {
                         name,
                         style: GoogleFonts.itim(
                           textStyle: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('favorite')
-                          .where('user_id', isEqualTo: _auth.currentUser?.uid)
-                          .where('recipes_id', isEqualTo: recipeId)
-                          .limit(1)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const CircularProgressIndicator();
-                        }
-                        bool isFavorite = snapshot.data!.docs.isNotEmpty;
-                        return GestureDetector(
-                          onTap: () async {
-                            if (_auth.currentUser == null) return;
-
-                            final favCollection = FirebaseFirestore.instance
-                                .collection('favorite');
-                            final favoriteDoc = await favCollection
-                                .where('user_id',
-                                    isEqualTo: _auth.currentUser!.uid)
-                                .where('recipes_id', isEqualTo: recipeId)
-                                .limit(1)
-                                .get();
-
-                            if (favoriteDoc.docs.isEmpty) {
-                              await favCollection.add({
-                                'user_id': _auth.currentUser!.uid,
-                                'recipes_id': recipeId,
-                                'date': DateFormat('dd-MM-yyyy')
-                                    .format(DateTime.now()),
-                                'time': DateFormat('HH:mm:ss')
-                                    .format(DateTime.now()),
-                              });
-                            } else {
-                              await favCollection
-                                  .doc(favoriteDoc.docs.first.id)
-                                  .delete();
-                            }
-                          },
-                          child: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? Colors.red : Colors.white,
-                            size: 30,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -167,432 +164,252 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _reviewRecipes(String name, int recipeId, String? imageUrl) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RecipesDetailPage(
-                recipesId: recipeId,
-                name: name,
-                imageUrl: imageUrl ?? '',
-              ),
-            ),
-          );
-        },
-        child: AspectRatio(
-          aspectRatio: 1 / 1,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Stack(
-                children: [
-                  imageUrl != null && imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        )
-                      : Container(),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      color: Colors.black.withOpacity(0.7),
-                      padding: const EdgeInsets.all(8),
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('recipeRating')
-                            .where('recipes_id', isEqualTo: recipeId)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
+  Future<List<Map<String, dynamic>>> _fetchFilteredRecipes() async {
+    Query query = FirebaseFirestore.instance.collection("recipes");
 
-                          if (!snapshot.hasData ||
-                              snapshot.data!.docs.isEmpty) {
-                            return const Text(
-                              'ยังไม่มีรีวิว',
-                              style: TextStyle(color: Colors.white),
-                            );
-                          }
+    // Apply search query filter
+    if (searchQuery.isNotEmpty) {
+      query = query
+          .where("name", isGreaterThanOrEqualTo: searchQuery)
+          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
+    }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: snapshot.data!.docs.map((ratingDoc) {
-                              final askRatingId = ratingDoc['askRating_id'];
-                              final userId = ratingDoc['user_id'];
-                              final date = ratingDoc['date'] ?? 'ไม่ระบุวันที่';
+    // Apply selectedFilter
+    if (selectedFilter == 'ของคาว') {
+      query = query.where("type", isEqualTo: "ของคาว");
+    } else if (selectedFilter == 'ของหวาน') {
+      query = query.where("type", isEqualTo: "ของหวาน");
+    }
 
-                              return FutureBuilder<DocumentSnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('askRating')
-                                    .doc(askRatingId)
-                                    .get(),
-                                builder: (context, askRatingSnapshot) {
-                                  if (askRatingSnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  }
+    // Fetch recipes and ingredients
+    final recipesSnapshot = await query.get();
+    final ingredientsSnapshot =
+        await FirebaseFirestore.instance.collection("ingredients").get();
 
-                                  if (!askRatingSnapshot.hasData ||
-                                      askRatingSnapshot.data == null) {
-                                    return const Text(
-                                      'ยังไม่มีรีวิว',
-                                      style: TextStyle(color: Colors.white),
-                                    );
-                                  }
+    // Fetch allergic ingredients of the current user
+    final allergicSnapshot = await FirebaseFirestore.instance
+        .collection("allergic_food")
+        .where("user_id", isEqualTo: _auth.currentUser?.uid)
+        .get();
 
-                                  // ดึงข้อมูล askRating
-                                  final askRatingData = askRatingSnapshot.data!
-                                      .data() as Map<String, dynamic>;
-                                  final avgScore =
-                                      askRatingData['avgScore'] ?? 0.0;
-                                  final comment = askRatingData['comment'] ??
-                                      'ไม่มีความคิดเห็น';
+    final allergicIngredients =
+        allergicSnapshot.docs.map((doc) => doc["allergic_ingr"]).toSet();
 
-                                  // ดึงข้อมูล user โดยใช้ userId
-                                  return FutureBuilder<DocumentSnapshot>(
-                                    future: FirebaseFirestore.instance
-                                        .collection('user')
-                                        .doc(userId)
-                                        .get(),
-                                    builder: (context, userSnapshot) {
-                                      if (userSnapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const Center(
-                                            child: CircularProgressIndicator());
-                                      }
+    // Log รายการส่วนผสมที่ผู้ใช้แพ้
+    debugPrint("Allergic Ingredients: $allergicIngredients");
 
-                                      if (!userSnapshot.hasData ||
-                                          userSnapshot.data == null) {
-                                        return const Text(
-                                          'ไม่พบข้อมูลผู้ใช้',
-                                          style: TextStyle(color: Colors.white),
-                                        );
-                                      }
+    // แยกสูตรอาหารที่มีส่วนผสมหรือชื่อที่ผู้ใช้แพ้ออกมา
+    final allergicRecipes = <Map<String, dynamic>>[];
+    final filteredRecipes = recipesSnapshot.docs.where((recipeDoc) {
+      final data = recipeDoc.data() as Map<String, dynamic>;
+      final recipeName = data["name"] ?? "";
+      final recipeId = data["recipes_id"];
+      final recipeIngredients = ingredientsSnapshot.docs
+          .where((ingrDoc) => ingrDoc["recipes_id"] == recipeId)
+          .map((ingrDoc) => ingrDoc["name"])
+          .toSet();
 
-                                      // ดึงข้อมูล user
-                                      final userData = userSnapshot.data!.data()
-                                          as Map<String, dynamic>;
-                                      final profileImage =
-                                          userData['profileImage'] ??
-                                              'assets/defaultProfile.png';
-                                      final username =
-                                          userData['username'] ?? 'ผู้ใช้';
+      // Log รายการส่วนผสมของแต่ละสูตรอาหาร
+      // debugPrint("Recipe Name: $recipeName, Ingredients: $recipeIngredients");
 
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: GoogleFonts.itim(
-                                              textStyle: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  const Icon(
-                                                    Icons.star,
-                                                    color: Colors.yellow,
-                                                    size: 20,
-                                                  ),
-                                                  Text(
-                                                    avgScore.toStringAsFixed(1),
-                                                    style: const TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                ],
-                                              ),
-                                              Text(
-                                                date.toString(),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            margin: const EdgeInsets.symmetric(
-                                                vertical: 4),
-                                            padding: const EdgeInsets.all(8),
-                                            color:
-                                                Colors.white.withOpacity(0.2),
-                                            child: Text(
-                                              comment,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                          Row(
-                                            children: [
-                                              ClipOval(
-                                                child: profileImage
-                                                        .startsWith('assets/')
-                                                    ? Image.asset(
-                                                        profileImage,
-                                                        width: 30,
-                                                        height: 30,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Image.network(
-                                                        profileImage,
-                                                        width: 30,
-                                                        height: 30,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                username,
-                                                style: const TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+      // ถ้าสูตรอาหารมีชื่อหรือส่วนผสมที่ผู้ใช้แพ้ ให้ log ออกมา
+      final containsAllergicName = allergicIngredients.any((allergen) =>
+          recipeName.contains(allergen)); // ชื่อสูตรอาหารที่มีคำที่ผู้ใช้แพ้
+
+      if (containsAllergicName ||
+          recipeIngredients.intersection(allergicIngredients).isNotEmpty) {
+        debugPrint("Allergic Recipe Found: $recipeName");
+        allergicRecipes.add({
+          "id": recipeId,
+          "name": recipeName,
+          "ingredients": recipeIngredients,
+        });
+        return false; // ไม่รวมในผลลัพธ์
+      }
+
+      // ถ้าไม่มีชื่อหรือส่วนผสมที่ผู้ใช้แพ้ ให้รวมไว้ในผลลัพธ์
+      return true;
+    }).map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return {
+        "id": data["recipes_id"],
+        "name": data["name"],
+        "image": data["image"],
+      };
+    }).toList();
+
+    // Log สูตรอาหารที่มีส่วนผสมหรือชื่อที่ผู้ใช้แพ้
+    debugPrint("Allergic Recipes: $allergicRecipes");
+
+    return filteredRecipes;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<Map<String, dynamic>?>(
-        future: _fetchUserData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("ไม่พบข้อมูลผู้ใช้"));
-          }
-
-          final userData = snapshot.data!;
-          final username = userData['username'] ?? '';
-          final profileImageName = userData['profileImage'];
-
-          return SingleChildScrollView(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(
+          'ค้นหาสูตรอาหาร',
+          style: GoogleFonts.itim(fontSize: 26),
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  color: Colors.green,
-                  padding: const EdgeInsets.only(top: 60, left: 20),
-                  height: 150,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FutureBuilder<String?>(
-                        future: getImagePath(profileImageName),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const CircularProgressIndicator();
-                          } else if (snapshot.hasError) {
-                            return const Icon(Icons.error);
-                          } else {
-                            final imagePath = snapshot.data;
-                            return CircleAvatar(
-                              radius: 38,
-                              backgroundImage: imagePath != null
-                                  ? FileImage(File(imagePath))
-                                  : const AssetImage(
-                                          'assets/defaultProfile.png')
-                                      as ImageProvider,
-                            );
-                          }
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                    searchRecipes(); // เรียกใช้ฟังก์ชันค้นหาหลังจากกรอกคำค้น
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'กินอะไรดี...',
+                    labelStyle: GoogleFonts.itim(),
+                    suffixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedFilter = 'ทั้งหมด';
+                          });
+                          fetchAllRecipes(); // ดึงข้อมูลทั้งหมดเมื่อเลือก "ทั้งหมด"
                         },
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('สวัสดีคุณ $username',
-                                style: GoogleFonts.itim(
-                                  textStyle: const TextStyle(
-                                      fontSize: 30,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
-                                )),
-                            const SizedBox(height: 4),
-                            Text(
-                              'วันนี้คุณทำเมนูอะไรดี?',
-                              style: GoogleFonts.itim(
-                                  textStyle: const TextStyle(
-                                      fontSize: 20, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selectedFilter == 'ทั้งหมด'
+                              ? Colors.green
+                              : Colors.grey,
+                          minimumSize: const Size(0, 50), // กำหนดความสูงของปุ่ม
+                        ),
+                        child: Text(
+                          'ทั้งหมด',
+                          style: GoogleFonts.itim(
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ทั้งหมด'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 20,
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('รายการอาหารทั้งหมด',
-                      style: GoogleFonts.itim(
-                        textStyle: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )),
-                ),
-                SizedBox(
-                  height: 270,
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('recipes')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      return ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data!.docs.length,
-                        itemBuilder: (context, index) {
-                          final recipeDocument = snapshot.data!.docs[index];
-                          final imageUrl =
-                              recipeDocument['image']; // ใช้ค่าภาพจาก Firestore
-                          final name = recipeDocument["name"];
-                          final recId = recipeDocument["recipes_id"];
-
-                          return _allRecipes(name, recId, imageUrl);
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedFilter = 'ของคาว';
+                          });
+                          fetchAllRecipes(); // ดึงข้อมูลประเภท "คาว"
                         },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('รีวิว',
-                      style: GoogleFonts.itim(
-                        textStyle: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selectedFilter == 'ของคาว'
+                              ? Colors.green
+                              : Colors.grey,
+                          minimumSize: const Size(0, 50),
                         ),
-                      )),
-                ),
-                SizedBox(
-                  height: 250,
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('recipeRating')
-                        .snapshots(),
-                    builder: (context, recipeRatingSnapshot) {
-                      if (!recipeRatingSnapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      // ดึง ratedRecipeIds พร้อมกับ askRating_id และ recipes_id
-                      final ratedRecipeIds = recipeRatingSnapshot.data!.docs
-                          .map((doc) => {
-                                'askRating_id': doc['askRating_id'],
-                                'recipes_id': doc['recipes_id'],
-                              })
-                          .toList();
-
-                      // กรองเฉพาะรายการที่มีรีวิวจาก recipeRating
-                      final uniqueRecipeIds = ratedRecipeIds
-                          .map((e) => e['recipes_id'])
-                          .toSet() // ใช้ Set เพื่อลบรายการซ้ำ
-                          .toList();
-
-                      return StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('recipes')
-                            .snapshots(),
-                        builder: (context, recipeSnapshot) {
-                          if (!recipeSnapshot.hasData) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-
-                          // กรองเฉพาะ recipes ที่มีการรีวิว
-                          final recipesWithRating =
-                              recipeSnapshot.data!.docs.where((doc) {
-                            // ตรวจสอบว่า recipes_id ตรงกับ uniqueRecipeIds หรือไม่
-                            return uniqueRecipeIds.contains(doc['recipes_id']);
-                          }).toList();
-
-                          if (recipesWithRating.isEmpty) {
-                            return const Center(
-                                child: Text('ไม่มีสูตรอาหารที่มีรีวิว'));
-                          }
-
-                          return ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: recipesWithRating.length,
-                            itemBuilder: (context, index) {
-                              final recipeDoc = recipesWithRating[index];
-                              final imageUrl = recipeDoc['image'];
-                              final name = recipeDoc['name'];
-                              final recId = recipeDoc['recipes_id'];
-
-                              return _reviewRecipes(name, recId, imageUrl);
-                            },
-                          );
+                        child: Text(
+                          'ของคาว',
+                          style: GoogleFonts.itim(
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ของคาว'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedFilter = 'ของหวาน';
+                          });
+                          fetchAllRecipes(); // ดึงข้อมูลประเภท "หวาน"
                         },
-                      );
-                    },
-                  ),
-                )
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selectedFilter == 'ของหวาน'
+                              ? Colors.green
+                              : Colors.grey,
+                          minimumSize: const Size(0, 50),
+                        ),
+                        child: Text(
+                          'ของหวาน',
+                          style: GoogleFonts.itim(
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontWeight: selectedFilter == 'ของหวาน'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 19,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _fetchFilteredRecipes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'เกิดข้อผิดพลาด: ${snapshot.error}',
+                      style: GoogleFonts.itim(fontSize: 24),
+                    ),
+                  );
+                }
+                final recipes = snapshot.data ?? [];
+                if (recipes.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'ไม่พบข้อมูล',
+                      style: GoogleFonts.itim(fontSize: 24),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: recipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe = recipes[index];
+                    return _buildImageSliderItem(
+                      recipe["name"] ?? "ไม่มีชื่อ",
+                      recipe["id"] ?? -1,
+                      recipe["image"] ??
+                          "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
