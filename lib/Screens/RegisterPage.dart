@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodallergies_app/Screens/TermsAndConditionsPage.dart';
 import 'package:foodallergies_app/auth/firebase_auth_services.dart';
@@ -45,21 +46,55 @@ class _RegisterState extends State<Register> {
 
   Future<void> _signup() async {
     if (_formKey.currentState!.validate()) {
-      final user = await _auth.createUserWithEmailAndPassword(
-        _email.text,
-        _password.text,
-      );
+      try {
+        final user = await _auth.createUserWithEmailAndPassword(
+          _email.text,
+          _password.text,
+        );
 
-      // ตรวจสอบว่าอีเมลมีอยู่แล้วใน Firestore
-      QuerySnapshot snapshot =
-          await _usercollection.where('email', isEqualTo: _email.text).get();
-      if (snapshot.docs.isNotEmpty) {
-        // แสดง AlertDialog ถ้ามีผู้ใช้ที่มีอีเมลนี้อยู่แล้ว
+        // แปลงวันที่เกิดเป็นรูปแบบ dd-mm-yyyy
+        String? birthDateString = _birthDate != null
+            ? "${_birthDate!.day.toString().padLeft(2, '0')}-${_birthDate!.month.toString().padLeft(2, '0')}-${(_birthDate!.year + 543)}"
+            : null;
+
+        // เพิ่มผู้ใช้ลงใน Firestore พร้อม user_id
+        await _usercollection.doc(user!.uid).set({
+          "user_id": user.uid, // ใช้ user.uid เป็น document ID
+          "username": _name.text,
+          "firstname": _firstName.text,
+          "lastname": _surname.text,
+          "gender": _gender, // เปลี่ยนเป็น text ถ้าจำเป็น
+          "birthDate": birthDateString,
+          "email": _email.text,
+          "password": _password.text,
+          "isAdmin": false,
+          "isDisabled": false,
+        });
+
+        // เปลี่ยนไปยังหน้าถัดไป
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const TermsAndConditionsPage()),
+        );
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        if (e.code == 'email-already-in-use') {
+          errorMessage = "อีเมลนี้ถูกใช้งานแล้ว";
+        } else if (e.code == 'weak-password') {
+          errorMessage = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+        } else if (e.code == 'invalid-email') {
+          errorMessage = "รูปแบบอีเมลไม่ถูกต้อง";
+        } else {
+          errorMessage = "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+        }
+
+        // แสดง AlertDialog
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("ไม่สามารถสร้างบัญชีผู้ใช้ได้"),
-            content: const Text("มีผู้ใช้ที่มีอีเมลนี้อยู่แล้ว"),
+            content: Text(errorMessage),
             actions: [
               TextButton(
                 onPressed: () {
@@ -70,31 +105,22 @@ class _RegisterState extends State<Register> {
             ],
           ),
         );
-      } else if (user != null) {
-        // แปลงวันที่เกิดเป็นรูปแบบ dd-mm-yyyy
-        String? birthDateString = _birthDate != null
-            ? "${_birthDate!.day.toString().padLeft(2, '0')}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.year}"
-            : null;
-
-        // เพิ่มผู้ใช้ลงใน Firestore พร้อม user_id
-        await _usercollection.doc(user.uid).set({
-          // ใช้ user.uid เป็น document ID
-          "user_id": user.uid, // เพิ่ม user_id
-          "username": _name.text,
-          "firstname": _firstName.text,
-          "lastname": _surname.text,
-          "gender": _gender, // เปลี่ยนเป็น text ถ้าจำเป็น
-          "birthDate": birthDateString,
-          "email": _email.text,
-          "password": _password.text,
-          "isAdmin": false
-        });
-
-        // เปลี่ยนไปยังหน้าถัดไป
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const TermsAndConditionsPage()),
+      } catch (e) {
+        // กรณีข้อผิดพลาดทั่วไป
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("เกิดข้อผิดพลาด"),
+            content: Text("ไม่สามารถสร้างบัญชีได้: $e"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text("ตกลง"),
+              ),
+            ],
+          ),
         );
       }
     }

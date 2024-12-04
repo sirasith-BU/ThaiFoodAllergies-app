@@ -149,11 +149,13 @@ class _HomePageState extends State<HomePage> {
                                 .get();
 
                             if (favoriteDoc.docs.isEmpty) {
+                              DateTime now = DateTime.now();
+                              String formattedDate =
+                                  '${DateFormat('dd-MM').format(now)}-${(now.year + 543).toString()}';
                               await favCollection.add({
                                 'user_id': _auth.currentUser!.uid,
                                 'recipes_id': recipeId,
-                                'date': DateFormat('dd-MM-yyyy')
-                                    .format(DateTime.now()),
+                                'date': formattedDate,
                                 'time': DateFormat('HH:mm:ss')
                                     .format(DateTime.now()),
                               });
@@ -391,20 +393,59 @@ class _HomePageState extends State<HomePage> {
                                       Row(
                                         children: [
                                           ClipOval(
-                                            child: profileImage
-                                                    .startsWith('assets/')
-                                                ? Image.asset(
-                                                    profileImage,
+                                            child: FutureBuilder<String?>(
+                                              future: getImagePath(
+                                                  profileImage), // เรียกใช้ฟังก์ชัน getImagePath
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return const SizedBox(
+                                                    width: 30,
+                                                    height: 30,
+                                                    child:
+                                                        CircularProgressIndicator(), // แสดง Loading ขณะกำลังโหลด
+                                                  );
+                                                } else if (snapshot.hasError) {
+                                                  return const Icon(
+                                                    Icons.error,
+                                                    size:
+                                                        30, // แสดง Error Icon หากเกิดข้อผิดพลาด
+                                                  );
+                                                } else {
+                                                  final imagePath =
+                                                      snapshot.data;
+
+                                                  return Image(
                                                     width: 30,
                                                     height: 30,
                                                     fit: BoxFit.cover,
-                                                  )
-                                                : Image.network(
-                                                    profileImage,
-                                                    width: 30,
-                                                    height: 30,
-                                                    fit: BoxFit.cover,
-                                                  ),
+                                                    image: (imagePath != null &&
+                                                            File(imagePath)
+                                                                .existsSync())
+                                                        ? FileImage(
+                                                                File(imagePath))
+                                                            as ImageProvider
+                                                        : (profileImage
+                                                                .startsWith(
+                                                                    'assets/')
+                                                            ? AssetImage(
+                                                                profileImage)
+                                                            : const AssetImage(
+                                                                'assets/defaultProfile.png')),
+                                                    errorBuilder: (context,
+                                                        error, stackTrace) {
+                                                      // กรณีโหลด Asset หรือ Network ไม่สำเร็จ
+                                                      return Image.asset(
+                                                        'assets/defaultProfile.png',
+                                                        width: 30,
+                                                        height: 30,
+                                                        fit: BoxFit.cover,
+                                                      );
+                                                    },
+                                                  );
+                                                }
+                                              },
+                                            ),
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
@@ -474,11 +515,11 @@ class _HomePageState extends State<HomePage> {
                             final imagePath = snapshot.data;
                             return CircleAvatar(
                               radius: 38,
-                              backgroundImage: imagePath != null
-                                  ? FileImage(File(imagePath))
+                              backgroundImage: (imagePath != null &&
+                                      File(imagePath).existsSync())
+                                  ? FileImage(File(imagePath)) as ImageProvider
                                   : const AssetImage(
-                                          'assets/defaultProfile.png')
-                                      as ImageProvider,
+                                      "assets/defaultProfile.png"),
                             );
                           }
                         },

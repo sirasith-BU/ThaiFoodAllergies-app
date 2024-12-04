@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:foodallergies_app/Screens/RecipesDetailPage.dart';
@@ -18,11 +17,12 @@ class _SearchPageState extends State<SearchPage> {
   String searchQuery = '';
   List<Map<String, dynamic>> searchResults = [];
   final _auth = AuthService();
+  int recipesCount = 0;
 
   @override
   void initState() {
     super.initState();
-    fetchAllRecipes();
+    searchRecipes();
   }
 
   Future<List<String>> fetchUserAllergies(String userId) async {
@@ -33,23 +33,41 @@ class _SearchPageState extends State<SearchPage> {
     return snapshot.docs.map((doc) => doc['allergic_ingr'].toString()).toList();
   }
 
-  void fetchAllRecipes() async {
+  // ฟังก์ชันสำหรับการค้นหาและกรองสูตรอาหาร
+  void searchRecipes() async {
+    // กรองตามประเภท (ของคาว, ของหวาน หรือทั้งหมด)
     Query query = FirebaseFirestore.instance.collection("recipes");
+    if (selectedFilter == 'ของคาว') {
+      query = query.where("type", isEqualTo: "ของคาว");
+    } else if (selectedFilter == 'ของหวาน') {
+      query = query.where("type", isEqualTo: "ของหวาน");
+    }
+
+    // กรองตามคำค้น (searchQuery)
+    if (searchQuery.isNotEmpty) {
+      query = query
+          .where("name", isGreaterThanOrEqualTo: searchQuery)
+          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
+    }
+
+    // ดึงข้อมูลที่กรองตามประเภทและคำค้น
     QuerySnapshot snapshot = await query.get();
+
     setState(() {
       searchResults = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
+        final data = doc.data() as Map<String, dynamic>;
         return {
-          "id": data?["recipes_id"] ?? "", // Use null-aware access
-          "name": data?["name"] ?? "Unknown Name",
-          "image": data?["image"] ??
+          "id": data["recipes_id"] ?? "",
+          "name": data["name"] ?? "ไม่มีชื่อ",
+          "image": data["image"] ??
               "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
         };
       }).toList();
+      recipesCount = searchResults.length; // อัปเดตจำนวนสูตรอาหารที่กรองแล้ว
     });
   }
 
-  void searchRecipes() async {
+  Future<List<Map<String, dynamic>>> _fetchFilteredRecipes() async {
     Query query = FirebaseFirestore.instance.collection("recipes");
 
     if (searchQuery.isNotEmpty) {
@@ -59,23 +77,45 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     if (selectedFilter == 'ของคาว') {
-      query = query.where("type", isEqualTo: "คาว");
+      query = query.where("type", isEqualTo: "ของคาว");
     } else if (selectedFilter == 'ของหวาน') {
-      query = query.where("type", isEqualTo: "หวาน");
+      query = query.where("type", isEqualTo: "ของหวาน");
     }
 
-    QuerySnapshot snapshot = await query.get();
-    setState(() {
-      searchResults = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>?; // Cast to a Map
-        return {
-          "id": data?["recipes_id"] ?? "", // Use null-aware access
-          "name": data?["name"] ?? "Unknown Name",
-          "image": data?["image"] ??
-              "https://media.istockphoto.com/id/1182393436/vector/fast-food-seamless-pattern-with-vector-line-icons-of-hamburger-pizza-hot-dog-beverage.jpg?s=612x612&w=0&k=20&c=jlj-n_CNsrd13tkHwC7MVo0cGUyyc8YP6wJQdCvMUGw=",
-        };
-      }).toList();
-    });
+    final recipesSnapshot = await query.get();
+    final ingredientsSnapshot =
+        await FirebaseFirestore.instance.collection("ingredients").get();
+
+    final allergicSnapshot = await FirebaseFirestore.instance
+        .collection("allergicFood")
+        .where("user_id", isEqualTo: _auth.currentUser?.uid)
+        .get();
+
+    final allergicIngredients =
+        allergicSnapshot.docs.map((doc) => doc["allergic_ingr"]).toSet();
+
+    return recipesSnapshot.docs.where((recipeDoc) {
+      final data = recipeDoc.data() as Map<String, dynamic>;
+      final recipeName = data["name"] ?? "";
+      final recipeId = data["recipes_id"];
+      final recipeIngredients = ingredientsSnapshot.docs
+          .where((ingrDoc) => ingrDoc["recipes_id"] == recipeId)
+          .map((ingrDoc) => ingrDoc["name"])
+          .toSet();
+
+      final containsAllergicName =
+          allergicIngredients.any((allergen) => recipeName.contains(allergen));
+
+      return !containsAllergicName &&
+          recipeIngredients.intersection(allergicIngredients).isEmpty;
+    }).map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return {
+        "id": data["recipes_id"],
+        "name": data["name"],
+        "image": data["image"],
+      };
+    }).toList();
   }
 
   Widget _buildImageSliderItem(String name, int recipeId, String imageUrl) {
@@ -165,86 +205,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _fetchFilteredRecipes() async {
-    Query query = FirebaseFirestore.instance.collection("recipes");
-
-    // Apply search query filter
-    if (searchQuery.isNotEmpty) {
-      query = query
-          .where("name", isGreaterThanOrEqualTo: searchQuery)
-          .where("name", isLessThanOrEqualTo: '$searchQuery\uf8ff');
-    }
-
-    // Apply selectedFilter
-    if (selectedFilter == 'ของคาว') {
-      query = query.where("type", isEqualTo: "ของคาว");
-    } else if (selectedFilter == 'ของหวาน') {
-      query = query.where("type", isEqualTo: "ของหวาน");
-    }
-
-    // Fetch recipes and ingredients
-    final recipesSnapshot = await query.get();
-    final ingredientsSnapshot =
-        await FirebaseFirestore.instance.collection("ingredients").get();
-
-    // Fetch allergic ingredients of the current user
-    final allergicSnapshot = await FirebaseFirestore.instance
-        .collection("allergic_food")
-        .where("user_id", isEqualTo: _auth.currentUser?.uid)
-        .get();
-
-    final allergicIngredients =
-        allergicSnapshot.docs.map((doc) => doc["allergic_ingr"]).toSet();
-
-    // Log รายการส่วนผสมที่ผู้ใช้แพ้
-    debugPrint("Allergic Ingredients: $allergicIngredients");
-
-    // แยกสูตรอาหารที่มีส่วนผสมหรือชื่อที่ผู้ใช้แพ้ออกมา
-    final allergicRecipes = <Map<String, dynamic>>[];
-    final filteredRecipes = recipesSnapshot.docs.where((recipeDoc) {
-      final data = recipeDoc.data() as Map<String, dynamic>;
-      final recipeName = data["name"] ?? "";
-      final recipeId = data["recipes_id"];
-      final recipeIngredients = ingredientsSnapshot.docs
-          .where((ingrDoc) => ingrDoc["recipes_id"] == recipeId)
-          .map((ingrDoc) => ingrDoc["name"])
-          .toSet();
-
-      // Log รายการส่วนผสมของแต่ละสูตรอาหาร
-      // debugPrint("Recipe Name: $recipeName, Ingredients: $recipeIngredients");
-
-      // ถ้าสูตรอาหารมีชื่อหรือส่วนผสมที่ผู้ใช้แพ้ ให้ log ออกมา
-      final containsAllergicName = allergicIngredients.any((allergen) =>
-          recipeName.contains(allergen)); // ชื่อสูตรอาหารที่มีคำที่ผู้ใช้แพ้
-
-      if (containsAllergicName ||
-          recipeIngredients.intersection(allergicIngredients).isNotEmpty) {
-        // debugPrint("Allergic Recipe Found: $recipeName");
-        allergicRecipes.add({
-          "id": recipeId,
-          "name": recipeName,
-          "ingredients": recipeIngredients,
-        });
-        return false; // ไม่รวมในผลลัพธ์
-      }
-
-      // ถ้าไม่มีชื่อหรือส่วนผสมที่ผู้ใช้แพ้ ให้รวมไว้ในผลลัพธ์
-      return true;
-    }).map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return {
-        "id": data["recipes_id"],
-        "name": data["name"],
-        "image": data["image"],
-      };
-    }).toList();
-
-    // Log สูตรอาหารที่มีส่วนผสมหรือชื่อที่ผู้ใช้แพ้
-    debugPrint("Allergic Recipes: $allergicRecipes");
-
-    return filteredRecipes;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,7 +248,7 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ทั้งหมด';
                           });
-                          fetchAllRecipes(); // ดึงข้อมูลทั้งหมดเมื่อเลือก "ทั้งหมด"
+                          searchRecipes(); // ดึงข้อมูลทั้งหมดเมื่อเลือก "ทั้งหมด"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ทั้งหมด'
@@ -316,7 +276,7 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ของคาว';
                           });
-                          fetchAllRecipes(); // ดึงข้อมูลประเภท "คาว"
+                          searchRecipes(); // ดึงข้อมูลประเภท "ของคาว"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของคาว'
@@ -344,7 +304,7 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             selectedFilter = 'ของหวาน';
                           });
-                          fetchAllRecipes(); // ดึงข้อมูลประเภท "หวาน"
+                          searchRecipes(); // ดึงข้อมูลประเภท "ของหวาน"
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: selectedFilter == 'ของหวาน'
@@ -371,6 +331,10 @@ class _SearchPageState extends State<SearchPage> {
               ],
             ),
           ),
+          Text(
+            "สูตรอาหารทั้งหมด: $recipesCount",
+            style: GoogleFonts.itim(fontSize: 20),
+          ),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _fetchFilteredRecipes(),
@@ -379,6 +343,7 @@ class _SearchPageState extends State<SearchPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
+                  log(snapshot.error.toString());
                   return Padding(
                     padding: const EdgeInsets.all(16),
                     child: Center(

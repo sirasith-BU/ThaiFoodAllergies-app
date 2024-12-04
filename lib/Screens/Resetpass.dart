@@ -4,14 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-class ResetPass extends StatefulWidget {
-  const ResetPass({super.key});
+class ResetPasswordPage extends StatefulWidget {
+  const ResetPasswordPage({super.key});
 
   @override
-  State<ResetPass> createState() => _ResetPassState();
+  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPassState extends State<ResetPass> {
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _auth = AuthService();
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -32,14 +32,16 @@ class _ResetPassState extends State<ResetPass> {
       if (userSnapshot.docs.isNotEmpty) {
         final userId = userSnapshot.docs[0].id;
 
+        DateTime now = DateTime.now();
+        String formattedDate =
+            '${DateFormat('dd-MM').format(now)}-${(now.year + 543).toString()}';
+
         // บันทึกข้อมูลการรีเซ็ตรหัสผ่านใน collection "reset_password"
-        await FirebaseFirestore.instance.collection("reset_password").add({
+        await FirebaseFirestore.instance.collection("resetPassword").add({
           "user_id": userId,
           "email": email,
-          "date": DateFormat('dd-MM-yyyy')
-              .format(DateTime.now()),
-          "time": DateFormat('HH:mm:ss')
-              .format(DateTime.now()), // เพิ่ม time
+          "date": formattedDate,
+          "time": DateFormat('HH:mm:ss').format(DateTime.now()), // เพิ่ม time
         });
 
         // แสดง AlertDialog เพื่อแจ้งผลลัพธ์

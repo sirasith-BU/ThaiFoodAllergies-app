@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+// import 'package:foodallergies_app/Screens/ViewProfilePage.dart';
 // import 'package:foodallergies_app/Examples.dart';
 import 'package:foodallergies_app/notifications/notification.dart';
 import 'package:foodallergies_app/wrapper.dart';
@@ -10,6 +11,5 @@ void main() async {
   await Firebase.initializeApp();
   await NotificationService.init();
   tz.initializeTimeZones();
-
   runApp(const MaterialApp(home: Wrapper()));
 }

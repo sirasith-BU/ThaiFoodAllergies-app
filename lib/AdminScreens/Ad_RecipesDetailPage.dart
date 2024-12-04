@@ -43,6 +43,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
       recipeData = {
         'method': 'ไม่มีข้อมูลวิธีทำ',
         'image': widget.imageUrl,
+        'ingredients': 'ไม่มีข้อมูลวัตถุดิบ'
       };
     }
 
@@ -113,9 +114,9 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                                   recipeData!['name'] ?? widget.name,
                                   style: GoogleFonts.itim(
                                     textStyle: const TextStyle(
-                                      fontSize: 34,
+                                      fontSize: 30,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                                      // fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
@@ -157,7 +158,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                       'วัตถุดิบ',
                       style: GoogleFonts.itim(
                         textStyle: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -169,12 +170,14 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                     itemCount: ingredients.length,
                     itemBuilder: (context, index) {
                       final ingrName = ingredients[index]['name'];
-                      final quantity = ingredients[index]['quantity'];
-                      final unit = ingredients[index]['unit'];
-                      return ListTile(
-                        title: Text(
+                      final quantity = ingredients[index]['quantity'] ?? "";
+                      final unit = ingredients[index]['unit'] ?? "";
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            left: 10, right: 6, top: 6, bottom: 6),
+                        child: Text(
                           "- $ingrName $quantity $unit",
-                          style: GoogleFonts.itim(),
+                          style: GoogleFonts.itim(fontSize: 18),
                         ),
                       );
                     },
@@ -185,7 +188,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                       'วิธีทำ',
                       style: GoogleFonts.itim(
                         textStyle: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -195,7 +198,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       recipeData!['method'] ?? 'ไม่มีข้อมูลวิธีทำ',
-                      style: GoogleFonts.itim(fontSize: 16),
+                      style: GoogleFonts.itim(fontSize: 18),
                     ),
                   ),
                   const SizedBox(height: 20),

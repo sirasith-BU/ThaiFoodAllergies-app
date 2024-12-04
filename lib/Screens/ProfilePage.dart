@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'LoginPage.dart';
-import 'ProfileEditPage.dart';
+import 'EditProfilePage.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -35,7 +35,7 @@ class _ProfileState extends State<Profile> {
     final user = _auth.currentUser;
     if (user != null) {
       final snapshot = await _firestore
-          .collection("allergic_food")
+          .collection("allergicFood")
           .where('user_id', isEqualTo: user.uid)
           .get();
       return snapshot.docs
@@ -182,8 +182,10 @@ class _ProfileState extends State<Profile> {
                             height: 200,
                             decoration: BoxDecoration(
                               image: DecorationImage(
-                                image: bgImagePath != null
+                                image: (bgImagePath != null &&
+                                        File(bgImagePath).existsSync())
                                     ? FileImage(File(bgImagePath))
+                                        as ImageProvider
                                     : const AssetImage(
                                         "assets/defaultBackground.jpg"),
                                 fit: BoxFit.cover,
@@ -212,11 +214,12 @@ class _ProfileState extends State<Profile> {
                                 children: [
                                   CircleAvatar(
                                     radius: 50,
-                                    backgroundImage: imagePath != null
+                                    backgroundImage: (imagePath != null &&
+                                            File(imagePath).existsSync())
                                         ? FileImage(File(imagePath))
+                                            as ImageProvider
                                         : const AssetImage(
-                                                "assets/defaultProfile.png")
-                                            as ImageProvider,
+                                            "assets/defaultProfile.png"),
                                   ),
                                   Positioned(
                                     bottom: 0,
@@ -354,55 +357,101 @@ class _ProfileState extends State<Profile> {
                                 ),
                               ],
                             ),
-                            // const SizedBox(height: 30),
+                            const SizedBox(height: 30),
                             Container(
                               padding: const EdgeInsets.all(10),
                               width: 800,
-                              // decoration: BoxDecoration(
-                              //   color: Colors.green[200],
-                              //   borderRadius: BorderRadius.circular(8.0),
-                              // ),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "วันเกิด",
-                                    style: GoogleFonts.itim(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "วันเกิด",
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              birthdate,
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "เพศ",
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              gender,
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    birthdate,
-                                    style: GoogleFonts.itim(fontSize: 20),
-                                  ),
-                                  Text(
-                                    "เพศ",
-                                    style: GoogleFonts.itim(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    gender,
-                                    style: GoogleFonts.itim(fontSize: 20),
-                                  ),
-                                  Text(
-                                    "เกี่ยวกับฉัน",
-                                    style: GoogleFonts.itim(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    aboutme,
-                                    style: GoogleFonts.itim(fontSize: 20),
-                                  ),
-                                  Text("รายการอาหารที่แพ้",
-                                      style: GoogleFonts.itim(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
-                                  Text(
-                                    allergicFoodList,
-                                    style: GoogleFonts.itim(fontSize: 20),
+                                  const SizedBox(
+                                      height: 10), // เพิ่มระยะห่างระหว่างแถว
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "คำแนะนำตัวเอง",
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              aboutme,
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "รายการอาหารที่แพ้",
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              allergicFoodList,
+                                              style: GoogleFonts.itim(
+                                                  fontSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

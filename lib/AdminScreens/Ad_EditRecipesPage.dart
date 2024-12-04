@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:foodallergies_app/AdminScreens/Ad_MainPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EditRecipesPage extends StatefulWidget {
   final int recipesId;
-
   const EditRecipesPage({super.key, required this.recipesId});
 
   @override
@@ -75,9 +75,71 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
 
   Future<void> _saveRecipe() async {
     try {
+      final recipeName = _nameController.text.trim();
+      final method = _methodController.text.trim();
+
+      // ตรวจสอบชื่อสูตรอาหาร
+      if (recipeName.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('กรุณากรอกชื่อสูตรอาหาร')),
+        );
+        return;
+      }
+
+      // ตรวจสอบว่ามีวัตถุดิบอย่างน้อย 1 อย่างที่ชื่อไม่ว่างเปล่า
+      if (_ingredients.isEmpty ||
+          _ingredients.any((ingredient) => ingredient['name'].trim().isEmpty)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('กรุณาเพิ่มวัตถุดิบที่มีชื่ออย่างน้อย 1 รายการ')),
+        );
+        return;
+      }
+
+      // ตรวจสอบว่ามีวิธีทำ
+      if (method.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('กรุณากรอกวิธีทำ')),
+        );
+        return;
+      }
+
       final imageUrl =
           _imageController.text.isEmpty ? defaultImage : _imageController.text;
 
+      // ตรวจสอบชื่อซ้ำก่อนบันทึก
+      final nameQuerySnapshot = await _firestore
+          .collection('recipes')
+          .where('name', isEqualTo: recipeName)
+          .get();
+
+      if (nameQuerySnapshot.docs.isNotEmpty) {
+        final existingDoc = nameQuerySnapshot.docs.first;
+        final existingRecipeId = existingDoc['recipes_id'];
+
+        if (existingRecipeId != widget.recipesId) {
+          // ชื่อซ้ำและไม่ใช่สูตรที่กำลังแก้ไข แสดง Dialog แจ้งเตือน
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('ชื่อซ้ำ'),
+              content: Text(
+                'มีชื่อ "$recipeName" อยู่ในระบบแล้ว กรุณาเปลี่ยนชื่อหรือลองเพิ่มคำอธิบายเพิ่มเติม',
+                style: GoogleFonts.itim(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('ตกลง'),
+                ),
+              ],
+            ),
+          );
+          return; // หยุดการทำงานของฟังก์ชัน
+        }
+      }
+
+      // ลบวัตถุดิบที่ต้องการลบ
       for (var ingredient in _ingredientsToDelete) {
         await _firestore
             .collection('ingredients')
@@ -85,6 +147,7 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
             .delete();
       }
 
+      // อัปเดตหรือสร้างข้อมูลใน recipes
       final querySnapshot = await _firestore
           .collection('recipes')
           .where('recipes_id', isEqualTo: widget.recipesId)
@@ -93,13 +156,22 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
       if (querySnapshot.docs.isNotEmpty) {
         final docId = querySnapshot.docs.first.id;
         await _firestore.collection('recipes').doc(docId).update({
-          'name': _nameController.text,
-          'method': _methodController.text,
+          'name': recipeName,
+          'method': method,
           'image': imageUrl,
-          'type': _foodType, // เพิ่มประเภทอาหาร
+          'type': _foodType,
+        });
+      } else {
+        await _firestore.collection('recipes').add({
+          'recipes_id': widget.recipesId,
+          'name': recipeName,
+          'method': method,
+          'image': imageUrl,
+          'type': _foodType,
         });
       }
 
+      // อัปเดตหรือเพิ่มข้อมูลวัตถุดิบ
       for (var ingredient in _ingredients) {
         final ingredientDoc = await _firestore
             .collection('ingredients')
@@ -181,6 +253,71 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('ลบวัตถุดิบเรียบร้อย!')),
       );
+    }
+  }
+
+  Future<void> _deleteRecipes() async {
+    // แสดง Dialog ยืนยันการลบ
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการลบ'),
+        content: const Text(
+          'คุณต้องการลบสูตรอาหารนี้และวัตถุดิบที่เกี่ยวข้องทั้งหมดหรือไม่?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), // ยกเลิก
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), // ตกลง
+            child: const Text('ตกลง'),
+          ),
+        ],
+      ),
+    );
+
+    // หากผู้ใช้ยืนยันการลบ
+    if (shouldDelete == true) {
+      try {
+        // ลบเอกสารจาก Collection recipes
+        final recipeQuerySnapshot = await _firestore
+            .collection('recipes')
+            .where('recipes_id', isEqualTo: widget.recipesId)
+            .get();
+
+        for (var recipeDoc in recipeQuerySnapshot.docs) {
+          await _firestore.collection('recipes').doc(recipeDoc.id).delete();
+        }
+
+        // ลบเอกสารจาก Collection ingredients
+        final ingredientsQuerySnapshot = await _firestore
+            .collection('ingredients')
+            .where('recipes_id', isEqualTo: widget.recipesId)
+            .get();
+
+        for (var ingredientDoc in ingredientsQuerySnapshot.docs) {
+          await _firestore
+              .collection('ingredients')
+              .doc(ingredientDoc.id)
+              .delete();
+        }
+
+        // แสดงข้อความยืนยันการลบสำเร็จ
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ลบสูตรอาหารสำเร็จ!')),
+        );
+
+        // ปิดหน้าหรือย้อนกลับ
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => const AdminMainPage()));
+      } catch (e) {
+        // แจ้งเตือนเมื่อเกิดข้อผิดพลาด
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+        );
+      }
     }
   }
 
@@ -297,7 +434,8 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextFormField(
-                          initialValue: ingredient['quantity'],
+                          initialValue: ingredient['quantity']
+                              .toString(), // แปลงเป็น String
                           style: GoogleFonts.itim(),
                           decoration: InputDecoration(
                             labelText: 'จำนวน',
@@ -406,6 +544,15 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
                   ),
                 ),
               ),
+              const SizedBox(
+                height: 10,
+              ),
+              TextButton(
+                  onPressed: _deleteRecipes,
+                  child: Text(
+                    "ลบสูตรอาหาร",
+                    style: GoogleFonts.itim(fontSize: 20, color: Colors.red),
+                  ))
             ],
           ),
         ),

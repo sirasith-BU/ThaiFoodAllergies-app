@@ -50,7 +50,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
         _birthdateController.text = userData['birthDate'] ?? '';
         _aboutMeController.text = userData['aboutMe'] ?? '';
         isDisabled = userData['isDisabled'] ?? false;
-        isAdmin = userData['admin'] ?? false;
+        isAdmin = userData['isAdmin'] ?? false;
       });
     }
   }
@@ -121,8 +121,9 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
 
       if (userData != null) {
         // กำหนดเวลา del_dateTime ในรูปแบบ dd/MM/yyyy HH:mm:ss
+        DateTime now = DateTime.now();
         String formattedDate =
-            DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now());
+            '${DateFormat('dd-MM').format(now)}-${(now.year + 543)} ${DateFormat('HH:mm:ss').format(now)}';
 
         // ย้ายข้อมูลไปที่ collection 'deleteUser' พร้อมเพิ่ม 'del_dateTime'
         await _firestore.collection('deleteUser').doc(userId).set({
@@ -143,6 +144,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
             ),
           ),
         );
+        Navigator.pop(context, true);
       } else {
         // กรณีไม่พบข้อมูลในคอลเล็กชัน 'user'
         ScaffoldMessenger.of(context).showSnackBar(
@@ -301,7 +303,7 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        isAdmin ? "Admin" : "General User",
+                        isAdmin ? "ผู้ดูแลระบบ" : "ผู้ใช้ทั่วไป",
                         style:
                             GoogleFonts.itim(color: Colors.white, fontSize: 20),
                         textAlign: TextAlign.center,

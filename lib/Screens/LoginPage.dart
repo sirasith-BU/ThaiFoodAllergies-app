@@ -5,7 +5,7 @@ import 'package:foodallergies_app/AdminScreens/Ad_MainPage.dart';
 import 'package:foodallergies_app/Screens/MainPage.dart';
 import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'Resetpass.dart';
+import 'ResetPass.dart';
 import 'RegisterPage.dart';
 
 class Login extends StatefulWidget {
@@ -225,7 +225,7 @@ class _LoginState extends State<Login> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const ResetPass()),
+                            builder: (context) => const ResetPasswordPage()),
                       );
                     },
                     child: Text(

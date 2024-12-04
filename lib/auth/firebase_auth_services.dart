@@ -13,17 +13,34 @@ class AuthService {
           email: email, password: password);
       return cred.user;
     } on FirebaseAuthException catch (e) {
-      exceptionHandler(e.code);
+      // โยนข้อผิดพลาดต่อไปยังผู้เรียกใช้ฟังก์ชัน
+      throw FirebaseAuthException(
+        code: e.code,
+        message: e.message,
+      );
     } catch (e) {
-      log("Something went wrong");
+      // โยนข้อผิดพลาดทั่วไป
+      throw Exception("Something went wrong: $e");
     }
-    return null;
   }
 
   Future<User?> loginUserWithEmailAndPassword(
       String email, String password) async {
     try {
-      // ตรวจสอบในคอลเล็กชัน 'user'
+      // ตรวจสอบในคอลเล็กชัน 'deleteUser' ก่อน
+      final deletedUserQuery = await FirebaseFirestore.instance
+          .collection('deleteUser')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (deletedUserQuery.docs.isNotEmpty) {
+        throw FirebaseAuthException(
+          code: 'account-deleted',
+          message: 'บัญชีนี้ถูกลบแล้ว โปรดสร้างบัญชีใหม่',
+        );
+      }
+
+      // ถ้าไม่พบใน 'deleteUser' ให้ตรวจสอบใน 'user'
       final userQuery = await FirebaseFirestore.instance
           .collection('user')
           .where('email', isEqualTo: email)
@@ -37,19 +54,6 @@ class AuthService {
           throw FirebaseAuthException(
             code: 'account-disabled',
             message: 'บัญชีนี้ถูกระงับการใช้งาน',
-          );
-        }
-      } else {
-        // ถ้าไม่พบใน 'user' ให้ตรวจสอบใน 'deleteUser'
-        final deletedUserQuery = await FirebaseFirestore.instance
-            .collection('deleteUser')
-            .where('email', isEqualTo: email)
-            .get();
-
-        if (deletedUserQuery.docs.isNotEmpty) {
-          throw FirebaseAuthException(
-            code: 'account-deleted',
-            message: 'บัญชีนี้ถูกลบแล้ว โปรดสร้างบัญชีใหม่',
           );
         }
       }

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:foodallergies_app/Screens/ViewProfilePage.dart';
 import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'RecipesRatingPage.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -21,6 +24,11 @@ class RecipesDetailPage extends StatefulWidget {
 
   @override
   _RecipesDetailPageState createState() => _RecipesDetailPageState();
+}
+
+Future<String> getImagePath(String imageName) async {
+  final Directory appDir = await getApplicationDocumentsDirectory();
+  return '${appDir.path}/$imageName';
 }
 
 Widget _RecipeOverallRating(int recipesId) {
@@ -330,14 +338,6 @@ Widget _CommentRecipes(int recipesId) {
           ),
         );
       }
-      // if (ratingDocs.isEmpty) {
-      //   return const Center(
-      //     child: Text(
-      //       "ยังไม่มีความคิดเห็น",
-      //       style: TextStyle(fontSize: 16),
-      //     ),
-      //   );
-      // }
 
       return ListView.builder(
         shrinkWrap: true,
@@ -392,48 +392,83 @@ Widget _CommentRecipes(int recipesId) {
                   return Padding(
                     padding:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundImage: AssetImage(profileImage),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(username,
-                                  style: GoogleFonts.itim(fontSize: 20)),
-                            ),
-                            Text(
-                              date.toString(),
-                              style: GoogleFonts.itim(
-                                  fontSize: 16, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            for (int i = 0; i < 5; i++)
-                              Icon(
-                                Icons.star,
-                                color: i < avgScore.round()
-                                    ? Colors.yellow
-                                    : Colors.grey,
-                                size: 16,
+                    child: GestureDetector(
+                      onTap: () {
+                        // นำทางไปยัง ViewProfilePage พร้อมส่ง userId
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ViewProfilePage(uid: userId),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              FutureBuilder<String>(
+                                future: getImagePath(
+                                    profileImage), // ใช้ฟังก์ชัน getImagePath
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const CircularProgressIndicator(); // แสดง Loading ระหว่างรอ
+                                  } else if (snapshot.hasError) {
+                                    return const Icon(
+                                        Icons.error); // แสดง Error ถ้ามีปัญหา
+                                  } else {
+                                    final imagePath = snapshot.data;
+                                    // ตรวจสอบว่าไฟล์มีอยู่ในเครื่องหรือไม่
+                                    return CircleAvatar(
+                                      radius: 24,
+                                      backgroundImage: (imagePath != null &&
+                                              File(imagePath).existsSync())
+                                          ? FileImage(File(
+                                              imagePath)) // ใช้ FileImage ถ้าไฟล์มี
+                                          : (profileImage.startsWith('assets/')
+                                              ? AssetImage(
+                                                  profileImage) // ใช้ AssetImage ถ้าเป็นไฟล์จาก assets
+                                              : const AssetImage(
+                                                  'assets/defaultProfile.png')), // fallback ถ้าไม่พบไฟล์
+                                    );
+                                  }
+                                },
                               ),
-                            const SizedBox(width: 5),
-                            Text("($avgScorefix1)"),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          comment,
-                          style: GoogleFonts.itim(fontSize: 22),
-                        ),
-                        const Divider(),
-                      ],
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(username,
+                                    style: GoogleFonts.itim(fontSize: 20)),
+                              ),
+                              Text(
+                                date.toString(),
+                                style: GoogleFonts.itim(
+                                    fontSize: 16, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              for (int i = 0; i < 5; i++)
+                                Icon(
+                                  Icons.star,
+                                  color: i < avgScore.round()
+                                      ? Colors.yellow
+                                      : Colors.grey,
+                                  size: 16,
+                                ),
+                              const SizedBox(width: 5),
+                              Text("($avgScorefix1)"),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            comment,
+                            style: GoogleFonts.itim(fontSize: 22),
+                          ),
+                          const Divider(),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -511,9 +546,9 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                             widget.name,
                             style: GoogleFonts.itim(
                               textStyle: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 30,
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                // fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -543,12 +578,14 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                                       .get();
 
                                   if (favoriteDoc.docs.isEmpty) {
+                                    DateTime now = DateTime.now();
+                                    String formattedDate =
+                                        '${DateFormat('dd-MM').format(now)}-${(now.year + 543).toString()}';
                                     // เพิ่มสูตรลงใน Favorite
                                     await favCollection.add({
                                       'user_id': userId,
                                       'recipes_id': widget.recipesId,
-                                      'date': DateFormat('dd-MM-yyyy')
-                                          .format(DateTime.now()),
+                                      'date': formattedDate,
                                       'time': DateFormat('HH:mm:ss')
                                           .format(DateTime.now()),
                                     });
@@ -655,7 +692,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                 'วัตถุดิบ',
                 style: GoogleFonts.itim(
                   textStyle: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -676,18 +713,26 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: ingredients.length,
                   itemBuilder: (context, index) {
-                    final ingrName = ingredients[index]['name'];
-                    final quantity = ingredients[index]['quantity'];
-                    final unit = ingredients[index]['unit'];
-                    return ListTile(
-                      title: Text(
-                        "- $ingrName $quantity $unit",
-                        style: GoogleFonts.itim(),
+                    // ดึงข้อมูลแต่ละฟิลด์จากเอกสาร
+                    final ingrName =
+                        ingredients[index]['name'] ?? "ไม่มีข้อมูลวัตถุดิบ";
+                    final quantity = ingredients[index]['quantity'] ?? "";
+                    final unit = ingredients[index]['unit'] ?? "";
+
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(left: 10, top: 0, bottom: 0),
+                      child: Text(
+                        "- $ingrName $quantity $unit", // รูปแบบข้อความตามที่ต้องการ
+                        style: GoogleFonts.itim(fontSize: 20),
                       ),
                     );
                   },
                 );
               },
+            ),
+            const SizedBox(
+              height: 10,
             ),
             Padding(
               padding: const EdgeInsets.only(left: 10),
@@ -695,7 +740,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                 'วิธีทำ',
                 style: GoogleFonts.itim(
                   textStyle: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -716,7 +761,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       'ไม่มีข้อมูลวิธีทำ',
-                      style: GoogleFonts.itim(fontSize: 16),
+                      style: GoogleFonts.itim(fontSize: 20),
                     ),
                   );
                 }
@@ -729,7 +774,7 @@ class _RecipesDetailPageState extends State<RecipesDetailPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     method,
-                    style: GoogleFonts.itim(fontSize: 16),
+                    style: GoogleFonts.itim(fontSize: 20),
                   ),
                 );
               },

@@ -77,51 +77,89 @@ class _RecipesRatingPageState extends State<RecipesRatingPage> {
       return;
     }
 
-    // เพิ่มหรืออัปเดตการให้คะแนนใน askRating collection
-    final askRatingRef = await _firestore.collection('askRating').add({
-      'qTaste_rating': "รสชาติอาหาร",
-      'qDifficult_rating': "ความยากในการทำ",
-      'qPresent_rating': "การนำเสนออาหาร",
-      'taste_rating': tasteRating,
-      'difficult_rating': difficultyRating,
-      'present_rating': presentationRating,
-      'avgScore': (tasteRating + difficultyRating + presentationRating) / 3,
-      'comment': commentController.text,
-    });
+    DateTime now = DateTime.now();
+    final String formattedDate =
+        '${DateFormat('dd-MM').format(now)}-${(now.year + 543)}';
+    final String formattedTime = DateFormat('HH:mm:ss').format(now);
 
-    // ตรวจสอบว่ามีการให้คะแนนอยู่แล้วใน recipeRating หรือไม่
-    final recipeRatingDoc = await _firestore
-        .collection('recipeRating')
-        .where('recipes_id', isEqualTo: widget.recipesId)
-        .where('user_id', isEqualTo: userId)
-        .limit(1)
-        .get();
+    try {
+      // ตรวจสอบว่ามีการให้คะแนนอยู่แล้วใน askRating
+      final askRatingQuery = await _firestore
+          .collection('askRating')
+          .where('user_id', isEqualTo: userId)
+          .where('recipes_id', isEqualTo: widget.recipesId)
+          .limit(1)
+          .get();
 
-    if (recipeRatingDoc.docs.isEmpty) {
-      // ไม่มีการให้คะแนนเลย, สร้างใหม่
-      await _firestore.collection('recipeRating').add({
-        'recipes_id': widget.recipesId,
-        'user_id': userId,
-        'date': DateFormat('dd-MM-yyyy').format(DateTime.now()),
-        'time': DateFormat('HH:mm:ss').format(DateTime.now()),
-        'askRating_id': askRatingRef.id, // อ้างอิงไปยัง askRating ที่เพิ่งสร้าง
-      });
-    } else {
-      // ถ้ามีการให้คะแนนอยู่แล้ว, อัปเดต
-      await _firestore
+      String askRatingId;
+      if (askRatingQuery.docs.isNotEmpty) {
+        // มีข้อมูลอยู่แล้ว, อัปเดต
+        askRatingId = askRatingQuery.docs.first.id;
+        await _firestore.collection('askRating').doc(askRatingId).update({
+          'qTaste_rating': "รสชาติอาหาร",
+          'qDifficult_rating': "ความง่ายในการทำ",
+          'qPresent_rating': "การนำเสนอ",
+          'taste_rating': tasteRating,
+          'difficult_rating': difficultyRating,
+          'present_rating': presentationRating,
+          'avgScore': (tasteRating + difficultyRating + presentationRating) / 3,
+          'comment': commentController.text,
+        });
+      } else {
+        // ไม่มีข้อมูล, สร้างใหม่
+        final askRatingRef = await _firestore.collection('askRating').add({
+          'user_id': userId,
+          'recipes_id': widget.recipesId,
+          'qTaste_rating': "รสชาติอาหาร",
+          'qDifficult_rating': "ความง่ายในการทำ",
+          'qPresent_rating': "การนำเสนอ",
+          'taste_rating': tasteRating,
+          'difficult_rating': difficultyRating,
+          'present_rating': presentationRating,
+          'avgScore': (tasteRating + difficultyRating + presentationRating) / 3,
+          'comment': commentController.text,
+        });
+        askRatingId = askRatingRef.id;
+      }
+
+      // ตรวจสอบว่ามีการให้คะแนนอยู่แล้วใน recipeRating หรือไม่
+      final recipeRatingDoc = await _firestore
           .collection('recipeRating')
-          .doc(recipeRatingDoc.docs.first.id)
-          .update({
-        'date': DateFormat('dd-MM-yyyy').format(DateTime.now()),
-        'time': DateFormat('HH:mm:ss').format(DateTime.now()),
-        'askRating_id': askRatingRef.id, // อัปเดต askRating_id
-      });
-    }
+          .where('recipes_id', isEqualTo: widget.recipesId)
+          .where('user_id', isEqualTo: userId)
+          .limit(1)
+          .get();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Rating submitted successfully.")),
-    );
-    Navigator.pop(context);
+      if (recipeRatingDoc.docs.isEmpty) {
+        // ไม่มีการให้คะแนนเลย, สร้างใหม่
+        await _firestore.collection('recipeRating').add({
+          'recipes_id': widget.recipesId,
+          'user_id': userId,
+          'date': formattedDate,
+          'time': formattedTime,
+          'askRating_id': askRatingId,
+        });
+      } else {
+        // ถ้ามีการให้คะแนนอยู่แล้ว, อัปเดต
+        await _firestore
+            .collection('recipeRating')
+            .doc(recipeRatingDoc.docs.first.id)
+            .update({
+          'date': formattedDate,
+          'time': formattedTime,
+          'askRating_id': askRatingId,
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("การให้คะแนนสูตรอาหารสำเร็จแล้ว!")),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("เกิดข้อผิดพลาด: ${e.toString()}")),
+      );
+    }
   }
 
   @override
@@ -164,7 +202,7 @@ class _RecipesRatingPageState extends State<RecipesRatingPage> {
             const SizedBox(height: 20),
             buildRatingSection("รสชาติอาหาร", "ไม่อร่อย", "อร่อยมาก",
                 (rating) => setState(() => tasteRating = rating)),
-            buildRatingSection("ความยากในการทำ", "ไม่ยากเลย", "ยากมาก",
+            buildRatingSection("ความยากในการทำ", "ยากมาก", "ง่ายมาก",
                 (rating) => setState(() => difficultyRating = rating)),
             buildRatingSection("การนำเสนออาหาร", "นำเสนอแย่", "นำเสนอดีมาก",
                 (rating) => setState(() => presentationRating = rating)),

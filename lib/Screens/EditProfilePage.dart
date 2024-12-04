@@ -102,8 +102,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         final userData = userSnapshot.data();
         if (userData != null) {
           // กำหนดเวลา del_dateTime ในรูปแบบ dd/MM/yyyy HH:mm:ss
+          DateTime now = DateTime.now();
           String formattedDate =
-              DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now());
+              '${DateFormat('dd-MM').format(now)}-${(now.year + 543)} ${DateFormat('HH:mm:ss').format(now)}';
 
           // ย้ายข้อมูลไปที่ collection 'deleteUser' พร้อมเพิ่ม 'del_dateTime'
           await _firestore.collection('deleteUser').doc(user.uid).set({
@@ -136,6 +137,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("แก้ไขโปรไฟล์", style: GoogleFonts.itim(fontSize: 26)),
       ),
@@ -181,7 +183,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             TextFormField(
               controller: _aboutmeController,
               decoration: InputDecoration(
-                labelText: "คำอธิบาย",
+                labelText: "คำแนะนำตัวเอง",
                 labelStyle: GoogleFonts.itim(),
               ),
             ),

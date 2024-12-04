@@ -33,7 +33,18 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
 
   Future<int> _getNextRecipeId() async {
     final snapshot = await _firestore.collection('recipes').get();
-    return snapshot.docs.isEmpty ? 1 : (snapshot.docs.length + 1) + 1;
+
+    if (snapshot.docs.isEmpty) {
+      return 1; // เริ่มที่ 1 ถ้ายังไม่มีข้อมูล
+    }
+
+    // หา recipes_id ที่มากที่สุด
+    int maxId = snapshot.docs
+        .map((doc) =>
+            doc.data()['recipes_id'] as int) // แปลงค่า recipes_id เป็น int
+        .reduce((a, b) => a > b ? a : b); // หา maximum
+
+    return maxId + 1; // คืนค่าถัดไป
   }
 
   Future<void> _saveRecipe() async {
@@ -42,6 +53,11 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
           _imageController.text.isEmpty ? defaultImage : _imageController.text;
       final nextRecipeId = await _getNextRecipeId();
 
+      // แปลงรายการวัตถุดิบเป็นข้อความ
+      // String ingredientsText = _ingredients.map((ingredient) {
+      //   return '- ${ingredient['name']} ${ingredient['quantity']} ${ingredient['unit']}';
+      // }).join('\n'); // ใช้ \n เพื่อขึ้นบรรทัดใหม่
+
       // เพิ่มสูตรอาหารใหม่
       await _firestore.collection('recipes').add({
         'recipes_id': nextRecipeId,
@@ -49,6 +65,7 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
         'method': _methodController.text,
         'image': imageUrl,
         'type': _foodType, // เพิ่มประเภทอาหาร
+        // 'ingredients': ingredientsText, // เพิ่มข้อความรายการวัตถุดิบ
       });
 
       // เพิ่มวัตถุดิบที่เกี่ยวข้องกับสูตรอาหารใหม่
@@ -73,6 +90,70 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
       setState(() {
         _ingredients.clear(); // ลบวัตถุดิบทั้งหมด
       });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+      );
+    }
+  }
+
+  Future<void> _checkAndSaveRecipe() async {
+    final recipeName = _nameController.text.trim();
+
+    // ตรวจสอบชื่อสูตรอาหาร
+    if (recipeName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกชื่อสูตรอาหาร')),
+      );
+      return;
+    }
+
+    // ตรวจสอบว่ามีวัตถุดิบอย่างน้อย 1 อย่างที่ชื่อไม่ว่างเปล่า
+    if (_ingredients.isEmpty ||
+        _ingredients.any((ingredient) => ingredient['name'].trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('กรุณาเพิ่มวัตถุดิบที่มีชื่ออย่างน้อย 1 รายการ')),
+      );
+      return;
+    }
+
+    // ตรวจสอบว่ามีวิธีทำ
+    if (_methodController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกวิธีทำ')),
+      );
+      return;
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('recipes')
+          .where('name', isEqualTo: recipeName)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        // ชื่อซ้ำ แสดง Dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('ชื่อซ้ำ'),
+            content: Text(
+              'มีชื่อ "$recipeName" อยู่ในระบบแล้ว ลองเพิ่มคำอธิบายเพิ่มเติมเช่น "$recipeName (สูตรของ...)"',
+              style: GoogleFonts.itim(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('ตกลง'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // ชื่อไม่ซ้ำและมีวัตถุดิบ บันทึกสูตรอาหาร
+        await _saveRecipe();
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
@@ -284,7 +365,7 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _saveRecipe,
+                onPressed: _checkAndSaveRecipe,
                 style: ButtonStyle(
                   minimumSize: WidgetStateProperty.all(const Size(350, 50)),
                   backgroundColor: WidgetStateProperty.all(Colors.orange),
