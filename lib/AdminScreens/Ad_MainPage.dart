@@ -61,6 +61,7 @@ class _AdminMainPageState extends State<AdminMainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -88,6 +89,7 @@ class _AdminMainPageState extends State<AdminMainPage> {
           ),
         ],
         currentIndex: _selectedIndex,
+        backgroundColor: Colors.white,
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
         selectedLabelStyle: GoogleFonts

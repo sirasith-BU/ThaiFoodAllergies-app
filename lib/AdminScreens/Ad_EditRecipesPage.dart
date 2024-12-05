@@ -324,11 +324,13 @@ class _EditRecipesPageState extends State<EditRecipesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           'แก้ไขสูตรอาหาร',
           style: GoogleFonts.itim(),
         ),
+        backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -177,7 +177,7 @@ class _EditAllergiesPageState extends State<EditAllergiesPage> {
                       textAlign: TextAlign.center,
                     ),
                     Text(
-                      "เช่น นม ไก่ ไข่ ",
+                      "เช่น นม ไก่ ไข่",
                       style: GoogleFonts.itim(
                         textStyle: const TextStyle(
                           fontSize: 22,
@@ -200,7 +200,7 @@ class _EditAllergiesPageState extends State<EditAllergiesPage> {
                       child: TextFormField(
                         controller: controller,
                         decoration: InputDecoration(
-                          labelText: "อาหารที่แพ้ เช่น นม",
+                          labelText: "วัตถุดิบอาหารที่แพ้",
                           labelStyle: GoogleFonts.itim(color: Colors.white),
                           enabledBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.white),

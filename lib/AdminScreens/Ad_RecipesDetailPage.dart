@@ -61,6 +61,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -68,6 +69,7 @@ class _AdminRecipesDetailPageState extends State<AdminRecipesDetailPage> {
             Navigator.pop(context); // กลับไปหน้าก่อนหน้า
           },
         ),
+        backgroundColor: Colors.white,
       ),
       body: recipeData == null
           ? const Center(child: CircularProgressIndicator())

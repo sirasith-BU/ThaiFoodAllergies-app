@@ -208,9 +208,11 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
         title: Text(
           'ค้นหาสูตรอาหาร',
           style: GoogleFonts.itim(fontSize: 26),

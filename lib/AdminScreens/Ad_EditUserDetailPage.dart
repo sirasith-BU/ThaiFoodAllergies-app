@@ -198,8 +198,10 @@ class _EditUserDetailPageState extends State<EditUserDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("แก้ไขข้อมูลผู้ใช้", style: GoogleFonts.itim(fontSize: 24)),
+        backgroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

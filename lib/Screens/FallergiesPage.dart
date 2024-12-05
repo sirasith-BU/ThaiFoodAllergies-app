@@ -4,14 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 
-class Fallergies extends StatefulWidget {
-  const Fallergies(BuildContext context, {super.key});
+class FirstAllergiesPage extends StatefulWidget {
+  const FirstAllergiesPage(BuildContext context, {super.key});
 
   @override
-  State<Fallergies> createState() => _FallergiesState();
+  State<FirstAllergiesPage> createState() => _FirstAllergiesPageState();
 }
 
-class _FallergiesState extends State<Fallergies> {
+class _FirstAllergiesPageState extends State<FirstAllergiesPage> {
   final _auth = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final _allergic_ingr = TextEditingController();
@@ -27,7 +27,8 @@ class _FallergiesState extends State<Fallergies> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("บันทึกข้อมูลสำเร็จ")),
         );
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainPage()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => const MainPage()));
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("เกิดข้อผิดพลาดในการบันทึกข้อมูล")),
@@ -46,11 +47,12 @@ class _FallergiesState extends State<Fallergies> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainPage()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => const MainPage()));
             },
             child: const Text(
               'Skip',
-              style: TextStyle(color: Colors.white, fontSize: 20),
+              style: TextStyle(color: Colors.white, fontSize: 26),
             ),
           ),
         ],
@@ -62,7 +64,7 @@ class _FallergiesState extends State<Fallergies> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "กรุณากรอกอาหารที่แพ้",
+                "กรุณากรอกวัตถุดิบอาหารที่แพ้",
                 style: GoogleFonts.itim(
                   textStyle: const TextStyle(
                     color: Colors.white,
@@ -72,17 +74,28 @@ class _FallergiesState extends State<Fallergies> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
+              Text(
+                "เช่น กุ้ง นม ไข่",
+                style: GoogleFonts.itim(
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                  ),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
               TextFormField(
                 controller: _allergic_ingr,
                 decoration: InputDecoration(
-                    labelText: "กรุณากรอกอาหารที่แพ้ เช่น นม",
+                    labelText: "วัตถุดิบอาหารที่แพ้ อย่างน้อย 1 อย่าง",
                     labelStyle: GoogleFonts.itim(
                         textStyle:
                             const TextStyle(color: Colors.white, fontSize: 20)),
                     enabledBorder: const UnderlineInputBorder(
                         borderSide: BorderSide(color: Colors.white))),
-                style: const TextStyle(color: Colors.white),
+                style: GoogleFonts.itim(color: Colors.white, fontSize: 26),
               ),
               const SizedBox(height: 20),
               ElevatedButton(

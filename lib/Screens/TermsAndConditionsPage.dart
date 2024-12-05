@@ -15,6 +15,7 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
         automaticallyImplyLeading: false,
@@ -113,6 +114,6 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
 
   void _onAccept(BuildContext context) {
     Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => Fallergies(context)));
+        context, MaterialPageRoute(builder: (context) => FirstAllergiesPage(context)));
   }
 }

@@ -239,6 +239,7 @@ class _AdminAddRecipesPageState extends State<AdminAddRecipesPage> {
                         'ประเภทอาหาร',
                         style: GoogleFonts.itim(),
                       ),
+                      dropdownColor: Colors.white,
                     ),
                   ),
                 ],

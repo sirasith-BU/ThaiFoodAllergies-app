@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:foodallergies_app/AdminScreens/Ad_EditUserDetailPage.dart';
+import 'package:foodallergies_app/auth/firebase_auth_services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ShowUserPage extends StatefulWidget {
   const ShowUserPage({super.key});
@@ -13,23 +16,46 @@ class ShowUserPage extends StatefulWidget {
 class _ShowUserPageState extends State<ShowUserPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
-  String searchBy = 'username'; // ตัวเลือกการค้นหาผู้ใช้
+  String searchBy = 'ชื่อผู้ใช้'; // ตรงกับคีย์ใน searchOptions
+  final _auth = AuthService();
+  late String currentUserId;
+  final Map<String, String> searchOptions = {
+    'ชื่อผู้ใช้': 'username',
+    'อีเมล': 'email',
+    'ชื่อจริง': 'firstname',
+    'นามสกุล': 'lastname',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = _auth.currentUser?.uid ?? '';
+  }
 
   // ฟังก์ชันค้นหาผู้ใช้จาก Firebase
   Future<List<DocumentSnapshot>> _searchUsers(String query) async {
+    String searchKey = searchOptions[searchBy] ?? 'username'; // ใช้ค่า mapping
+    QuerySnapshot result;
+
     if (query.isEmpty) {
-      // ถ้าไม่มีการกรอกคำค้นหา, แสดงผู้ใช้ทั้งหมด
-      QuerySnapshot result = await _firestore.collection('user').get();
-      return result.docs;
+      result = await _firestore.collection('user').get();
     } else {
-      // หากกรอกคำค้นหามา, ให้ค้นหาตามเงื่อนไขที่เลือก
-      QuerySnapshot result = await _firestore
+      result = await _firestore
           .collection('user')
-          .where(searchBy, isGreaterThanOrEqualTo: query)
-          .where(searchBy, isLessThanOrEqualTo: '$query\uf8ff')
+          .where(searchKey, isGreaterThanOrEqualTo: query)
+          .where(searchKey, isLessThanOrEqualTo: '$query\uf8ff')
           .get();
-      return result.docs;
     }
+
+    // กรองไม่ให้แสดง current user
+    return result.docs.where((doc) => doc.id != currentUserId).toList();
+  }
+
+  Future<String?> getImagePath(String? imageName) async {
+    if (imageName == null) return null;
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String filePath = '${appDir.path}/$imageName';
+    return filePath;
   }
 
   // ฟังก์ชันแสดงข้อมูลผู้ใช้ในรายการ
@@ -62,28 +88,51 @@ class _ShowUserPageState extends State<ShowUserPage> {
         ),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          radius: 25,
-          backgroundColor: Colors.transparent, // ทำให้พื้นหลังโปร่งใส
-          child: ClipOval(
-            child: ColorFiltered(
-              colorFilter: isDisabled
-                  ? const ColorFilter.mode(
-                      Colors.grey, // เปลี่ยนภาพเป็นสีเทา
-                      BlendMode.saturation,
-                    )
-                  : const ColorFilter.mode(
-                      Colors.transparent, // ใช้ภาพปกติ
-                      BlendMode.multiply,
+        leading: FutureBuilder<String?>(
+          future: getImagePath(profileImage),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return const Icon(Icons.error);
+            } else {
+              final imagePath = snapshot.data;
+              ImageProvider backgroundImage;
+
+              if (imagePath != null && File(imagePath).existsSync()) {
+                backgroundImage = FileImage(File(imagePath));
+              } else {
+                backgroundImage = const AssetImage("assets/defaultProfile.png");
+              }
+
+              // Adding the ColorFiltered and ClipOval logic
+              return CircleAvatar(
+                radius: 25, // Adjusted size
+                backgroundColor: Colors.transparent,
+                child: ClipOval(
+                  child: ColorFiltered(
+                    colorFilter: isDisabled
+                        ? const ColorFilter.mode(
+                            Colors
+                                .grey, // Change the image to grayscale if disabled
+                            BlendMode.saturation,
+                          )
+                        : const ColorFilter.mode(
+                            Colors.transparent, // Use the normal image
+                            BlendMode.multiply,
+                          ),
+                    child: Image(
+                      image: backgroundImage,
+                      width: 50, // Ensure consistent size
+                      height: 50,
+                      fit:
+                          BoxFit.cover, // Make the image fill the circular area
                     ),
-              child: Image.asset(
-                profileImage,
-                width: 50, // กำหนดขนาดภาพให้เหมาะสม
-                height: 50, // กำหนดขนาดภาพให้เหมาะสม
-                fit: BoxFit.cover, // ทำให้ภาพเติมเต็มพื้นที่กลม
-              ),
-            ),
-          ),
+                  ),
+                ),
+              );
+            }
+          },
         ),
         title: Text(
           username,
@@ -151,29 +200,26 @@ class _ShowUserPageState extends State<ShowUserPage> {
             const SizedBox(height: 16),
             // ตัวเลือกการค้นหาด้วย
             SizedBox(
-              width: 150, // กำหนดความกว้างตามที่ต้องการ
+              width: 150,
               child: DropdownButtonFormField<String>(
-                value: searchBy,
+                value: searchBy, // ค่าที่เลือกเริ่มต้น
                 onChanged: (String? newValue) {
                   setState(() {
-                    searchBy = newValue!;
+                    searchBy = newValue!; // อัปเดตค่าตัวเลือก
                   });
                 },
                 decoration: const InputDecoration(
-                  labelText: 'ค้นหาตาม', // ข้อความกำกับที่จะแสดง
+                  labelText: 'ค้นหาโดย',
                   border: OutlineInputBorder(),
                 ),
-                items: <String>[
-                  'username',
-                  'email',
-                  'firstname',
-                  'lastname',
-                ].map<DropdownMenuItem<String>>((String value) {
+                items: searchOptions.keys
+                    .map<DropdownMenuItem<String>>((String key) {
                   return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
+                    value: key, // ใช้คีย์ภาษาไทยตรงกับค่าใน searchOptions
+                    child: Text(key), // แสดงคีย์ภาษาไทยใน Dropdown
                   );
                 }).toList(),
+                dropdownColor: Colors.white ,
               ),
             ),
             const SizedBox(height: 16),
